@@ -9,3 +9,27 @@ val Pink80 = Color(0xFFEFB8C8)
 val Purple40 = Color(0xFF6650a4)
 val PurpleGrey40 = Color(0xFF625b71)
 val Pink40 = Color(0xFF7D5260)
+
+object AppColor {
+    val RootBg = Color(0xFF0F1117)
+    val CardBg = Color(0x1A_FFFFFF)        // visible glass
+    val CardBorder = Color(0x26_FFFFFF)
+    val GlassBg = Color(0x14_FFFFFF)
+    val GlassBorder = Color(0x1F_FFFFFF)
+    val Divider = Color(0x14_FFFFFF)
+
+    val TextPrimary = Color(0xFFE2E8F0)
+    val TextSecondary = Color(0xFF9CA3AF)
+    val TextMuted = Color(0xFF6B7280)
+
+    val Primary = Color(0xFF6366F1)
+    val Violet = Color(0xFF8B5CF6)
+
+    val Accents = listOf(
+        Color(0xFF6366F1), // indigo
+        Color(0xFF8B5CF6), // violet
+        Color(0xFF10B981), // emerald
+        Color(0xFFF59E0B), // amber
+        Color(0xFFEF4444)  // red
+    )
+}

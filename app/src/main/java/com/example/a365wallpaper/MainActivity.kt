@@ -1,12 +1,8 @@
 package com.example.a365wallpaper
 
-import android.content.ContentValues
-import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
-import android.os.Environment
-import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -54,138 +50,147 @@ import com.example.a365wallpaper.ui.theme._365WallpaperTheme
 import dev.shreyaspatil.capturable.capturable
 import dev.shreyaspatil.capturable.controller.rememberCaptureController
 import kotlinx.coroutines.delay
-import java.io.OutputStream
 
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Text
 
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import com.example.a365wallpaper.presentation.Wallpaper365HomeScreen
+import com.example.a365wallpaper.presentation.Wallpaper365ViewModel
+import org.koin.androidx.viewmodel.ext.android.getViewModel
 import kotlin.random.Random
 
+
+
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        fun startWallpaperEveryMinute(context: Context) {
-            val req = OneTimeWorkRequestBuilder<WallpaperMinuteWorker>()
-                .setInputData(workDataOf(WallpaperMinuteWorker.KEY_TARGET to WallpaperTarget.BOTH.name))
-                .build()
 
-            WorkManager.getInstance(context).enqueueUniqueWork(
-                "wallpaper_every_minute_test",
-                ExistingWorkPolicy.REPLACE,
-                req
-            )
-        }
+        Log.d("WP_MAIN", "onCreate() -> enqueue worker now")
+//        startWallpaperEveryMinute()
 
-        fun stopWallpaperEveryMinute(context: Context) {
-            WorkManager.getInstance(context).cancelUniqueWork("wallpaper_every_minute_test")
-        }
-
-
+        val viewModel = getViewModel<Wallpaper365ViewModel>()
         setContent {
             _365WallpaperTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    YearDotsWallpaper()
+                Scaffold(modifier = Modifier.fillMaxSize()) { paddingValues ->
+                    Wallpaper365HomeScreen(
+                        viewModel = viewModel,
+                        onOpenFilters = {}
+                    )
                 }
             }
         }
+    }
 
+//    private fun startWallpaperEveryMinute() {
+//        val req = OneTimeWorkRequestBuilder<WallpaperMinuteWorker>()
+//            .setInputData(workDataOf(WallpaperMinuteWorker.KEY_TARGET to WallpaperTarget.BOTH.name))
+//            .build()
+//
+//        Log.d("WP_MAIN", "enqueueUniqueWork id=${req.id}")
+//        WorkManager.getInstance(this).enqueueUniqueWork(
+//            "wallpaper_every_minute_test",
+//            ExistingWorkPolicy.REPLACE,
+//            req
+//        )
+//    }
 
+    private fun stopWallpaperEveryMinute() {
+        Log.d("WP_MAIN", "cancelUniqueWork")
+        WorkManager.getInstance(this).cancelUniqueWork("wallpaper_every_minute_test")
     }
 }
 
 
 
-@OptIn(ExperimentalComposeUiApi::class)
-@Composable
-fun CaptureTestScreen() {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val captureController = rememberCaptureController()
-    val configuration = LocalConfiguration.current
 
-    var lastSavedUri by remember { mutableStateOf<Uri?>(null) }
-
-    Log.d("ScrrenDimenioms", "width = ${configuration.screenWidthDp}, heigh = ${configuration.screenHeightDp}")
-
-    LaunchedEffect(Unit) {
-        delay(4000)
-
-        val imageBitmap = captureController.captureAsync().await()
-        val bmp = imageBitmap.asAndroidBitmap()
-        lastSavedUri = saveBitmapToPictures(
-            context,
-            bmp,
-            "compose_capture_${System.currentTimeMillis()}.png"
-        )
-    }
-
-    Column(Modifier.fillMaxSize().statusBarsPadding().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-
-        // The composable you want to export as an image
-        Box(
-            modifier = Modifier
-                .width(configuration.screenWidthDp.dp)
-                .height(configuration.screenHeightDp.dp)
-                .capturable(captureController),
-            contentAlignment = Alignment.Center
-        ) {
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                Box(
-                    Modifier.fillMaxSize().background(Color(0xff1a1a1a)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center) {
-                        repeat(20){
-                            Row() {
-                                repeat(20){
-                                    Icon(Icons.Default.CheckCircle, contentDescription = null)
-
-                                }
-                            }
-
-                        }
-                    }
-                }
-            }
-        }
-
-//        Button(onClick = {
-//            scope.launch {
-//                val imageBitmap = captureController.captureAsync().await() // Capturable API [web:53]
-//                val bmp = imageBitmap.asAndroidBitmap()
-//                lastSavedUri = saveBitmapToPictures(context, bmp, "compose_capture_${System.currentTimeMillis()}.png")
+//@OptIn(ExperimentalComposeUiApi::class)
+//@Composable
+//fun CaptureTestScreen() {
+//    val context = LocalContext.current
+//    val scope = rememberCoroutineScope()
+//    val captureController = rememberCaptureController()
+//    val configuration = LocalConfiguration.current
+//
+//    var lastSavedUri by remember { mutableStateOf<Uri?>(null) }
+//
+//    Log.d("ScrrenDimenioms", "width = ${configuration.screenWidthDp}, heigh = ${configuration.screenHeightDp}")
+//
+//    LaunchedEffect(Unit) {
+//        delay(4000)
+//
+//        val imageBitmap = captureController.captureAsync().await()
+//        val bmp = imageBitmap.asAndroidBitmap()
+////        lastSavedUri = saveBitmapToPictures(
+////            context,
+////            bmp,
+////            "compose_capture_${System.currentTimeMillis()}.png"
+////        )
+//    }
+//
+//    Column(Modifier.fillMaxSize().statusBarsPadding().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+//
+//        // The composable you want to export as an image
+//        Box(
+//            modifier = Modifier
+//                .width(configuration.screenWidthDp.dp)
+//                .height(configuration.screenHeightDp.dp)
+//                .capturable(captureController),
+//            contentAlignment = Alignment.Center
+//        ) {
+//            Card(
+//                shape = RoundedCornerShape(20.dp),
+//                modifier = Modifier.fillMaxSize()
+//            ) {
+//                Box(
+//                    Modifier.fillMaxSize().background(Color(0xff1a1a1a)),
+//                    contentAlignment = Alignment.Center
+//                ) {
+//                    Column(horizontalAlignment = Alignment.CenterHorizontally,
+//                        verticalArrangement = Arrangement.Center) {
+//                        repeat(20){
+//                            Row() {
+//                                repeat(20){
+//                                    Icon(Icons.Default.CheckCircle, contentDescription = null)
+//
+//                                }
+//                            }
+//
+//                        }
+//                    }
+//                }
 //            }
-//        }) {
-//            Text("Capture & Save")
 //        }
-
-
-        if (lastSavedUri != null) {
-            Toast.makeText(context, "Image saved", Toast.LENGTH_SHORT).show()
-        }
-    }
-}
+//
+////        Button(onClick = {
+////            scope.launch {
+////                val imageBitmap = captureController.captureAsync().await() // Capturable API [web:53]
+////                val bmp = imageBitmap.asAndroidBitmap()
+////                lastSavedUri = saveBitmapToPictures(context, bmp, "compose_capture_${System.currentTimeMillis()}.png")
+////            }
+////        }) {
+////            Text("Capture & Save")
+////        }
+//
+//
+//        if (lastSavedUri != null) {
+//            Toast.makeText(context, "Image saved", Toast.LENGTH_SHORT).show()
+//        }
+//    }
+//}
 
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun YearDotsWallpaper(
+fun yearDotsWallpaper(
     modifier: Modifier = Modifier,
     totalDays: Int = 365,
-    // 0-based: 0 = Jan 1, 32 = Feb 2 in a non-leap year, etc.
     todayIndex: Int = 32,
     columns: Int = 15,
     dotSize: Dp = 14.dp,
@@ -200,25 +205,18 @@ fun YearDotsWallpaper(
     val clampedToday = todayIndex.coerceIn(0, totalDays - 1)
     val daysLeft = (totalDays - 1) - clampedToday
     val percent = ((clampedToday + 1) * 100) / totalDays
-
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val captureController = rememberCaptureController()
     val configuration = LocalConfiguration.current
 
-    var lastSavedUri by remember { mutableStateOf<Uri?>(null) }
+    val bgColor = remember { Color(
+        Random.nextInt(100,256),
+        Random.nextInt(100,256),
+        Random.nextInt(100,256),
+        alpha = 0xff,
+    ) }
     LaunchedEffect(Unit) {
-//        delay(4000)
-
         val imageBitmap = captureController.captureAsync().await()
         val bmp = imageBitmap.asAndroidBitmap()
-
-
-//        lastSavedUri = saveBitmapToPictures(
-//            context,
-//            bmp,
-//            "compose_capture_${System.currentTimeMillis()}.png"
-//        )
     }
 
     Box(
@@ -243,11 +241,7 @@ fun YearDotsWallpaper(
             todayColor = todayColor,
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(
-                    Random.nextInt(256),
-                    Random.nextInt(256),
-                    Random.nextInt(256)
-                ))
+                .background(bgColor)
                 .padding(horizontal = 18.dp)
         )
 
@@ -270,9 +264,7 @@ fun YearDotsWallpaper(
         }
     }
 
-    if (lastSavedUri != null) {
-        Toast.makeText(context, "Image saved", Toast.LENGTH_SHORT).show()
-    }
+
 }
 
 @Composable
@@ -325,18 +317,19 @@ private fun DotsGrid(
 }
 
 
-private fun saveBitmapToPictures(context: Context, bitmap: Bitmap, fileName: String): Uri? {
-    val resolver = context.contentResolver
-    val values = ContentValues().apply {
-        put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
-        put(MediaStore.Images.Media.MIME_TYPE, "image/png")
-        put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/TestCaptures") // scoped storage [web:65]
-    }
-
-    val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return null
-    val out: OutputStream = resolver.openOutputStream(uri) ?: return null
-    out.use { stream ->
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
-    }
-    return uri
-}
+//private fun saveBitmapToPictures(context: Context, bitmap: Bitmap, fileName: String): Uri? {
+//
+//    val resolver = context.contentResolver
+//    val values = ContentValues().apply {
+//        put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+//        put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+//        put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/TestCaptures") // scoped storage [web:65]
+//    }
+//
+//    val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return null
+//    val out: OutputStream = resolver.openOutputStream(uri) ?: return null
+//    out.use { stream ->
+//        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+//    }
+//    return uri
+//}
