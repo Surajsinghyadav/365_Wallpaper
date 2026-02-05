@@ -34,11 +34,9 @@ import com.example.a365wallpaper.ui.theme.AppColor
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Wallpaper365HomeScreen(
-//    onBack: () -> Unit,
-    onOpenFilters: () -> Unit,
-    viewModel: Wallpaper365ViewModel
+    viewModel: Wallpaper365ViewModel,
 //    onSave: (Wallpaper365State) -> Unit,
-//    onSetWallpaper: (Wallpaper365State) -> Unit,
+    onSetWallpaper: () -> Unit,
 ) {
 //    var state by remember { mutableStateOf(Wallpaper365State()) }
     var showTargetSheet by remember { mutableStateOf(false) }
@@ -88,8 +86,7 @@ fun Wallpaper365HomeScreen(
                         modifier = Modifier
                             .size(40.dp)
                             .clip(CircleShape)
-                            .background(AppColor.GlassBg)
-                            .clickable(onClick = onOpenFilters),
+                            .background(AppColor.GlassBg),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -132,13 +129,13 @@ fun Wallpaper365HomeScreen(
                 target = target,
                 onTargetClick = { newTarget ->
                     viewModel.updateSetWallpaperTo(newTarget)
-                                },
+                },
                 onSave = {
 //                    onSave(state)
-                         },
-                onSetWallpaper = {
-//                    onSetWallpaper(state)
-                                 },
+                },
+                onSetWallpaper ={
+                    onSetWallpaper()
+                },
             )
         }
     ) { padding ->
@@ -382,7 +379,11 @@ private fun PhonePreviewMock(
                                         modifier = Modifier
                                             .size(6.dp)
                                             .clip(CircleShape)
-                                            .background(if (active) accent else Color.White.copy(alpha = 0.20f))
+                                            .background(
+                                                if (active) accent else Color.White.copy(
+                                                    alpha = 0.20f
+                                                )
+                                            )
                                     )
                                 }
                             }
@@ -548,7 +549,9 @@ private fun <T> ChipRow(
                 shape = RoundedCornerShape(999.dp),
                 color = if (isSel) AppColor.Primary.copy(alpha = 0.18f) else AppColor.GlassBg,
                 border = BorderStroke(1.dp, if (isSel) AppColor.Primary.copy(alpha = 0.45f) else AppColor.GlassBorder),
-                modifier = Modifier.clip(RoundedCornerShape(999.dp)).clickable { onSelected(item) }
+                modifier = Modifier
+                    .clip(RoundedCornerShape(999.dp))
+                    .clickable { onSelected(item) }
             ) {
                 Text(
                     label(item),
