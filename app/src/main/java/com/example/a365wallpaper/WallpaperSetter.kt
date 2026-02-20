@@ -5,8 +5,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Rect
 import android.os.Build
+import com.example.a365wallpaper.data.WallpaperTarget
 
-enum class WallpaperTarget { HOME, LOCK, BOTH }
 
 class WallpaperSetter(private val context: Context) {
     fun set(bitmap: Bitmap, target: WallpaperTarget, size: WallpaperSizePx) {
@@ -14,13 +14,13 @@ class WallpaperSetter(private val context: Context) {
         val crop = Rect(0, 0, size.width, size.height)
 
         when (target) {
-            WallpaperTarget.HOME ->
+            WallpaperTarget.Home ->
                 wm.setBitmap(bitmap, crop, true, WallpaperManager.FLAG_SYSTEM)
 
-            WallpaperTarget.LOCK ->
+            WallpaperTarget.Lock ->
                 wm.setBitmap(bitmap, null, true, WallpaperManager.FLAG_LOCK)
 
-            WallpaperTarget.BOTH -> {
+            WallpaperTarget.Both -> {
                 wm.setBitmap(bitmap,  crop, true, WallpaperManager.FLAG_SYSTEM)
                 wm.setBitmap(bitmap, null, true, WallpaperManager.FLAG_LOCK)
             }

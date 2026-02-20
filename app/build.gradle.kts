@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     id("com.google.devtools.ksp")
+    alias(libs.plugins.jetbrains.kotlin.serialization)
 }
 
 android {
@@ -48,6 +49,9 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.compose.foundation.layout)
+    implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.navigation3.ui)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -61,5 +65,18 @@ dependencies {
 
     implementation("io.insert-koin:koin-android:4.1.1")
     implementation("io.insert-koin:koin-androidx-compose:4.1.1")
+// Room
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+
+    implementation(libs.kotlinx.coroutines.android)
+    implementation("androidx.compose.material:material-icons-extended:1.7.8") // Replace with the latest version
+    implementation(libs.kotlinx.serialization.core)
+
+    // koin Worker
+    implementation("io.insert-koin:koin-androidx-workmanager:4.1.1")
+
+
 
 }

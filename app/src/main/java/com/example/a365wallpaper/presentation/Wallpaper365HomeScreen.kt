@@ -1,277 +1,337 @@
 package com.example.a365wallpaper.presentation
 
+import android.util.Log
+import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.adamglin.PhosphorIcons
 import com.adamglin.phosphoricons.Regular
 import com.adamglin.phosphoricons.regular.*
 import com.example.a365wallpaper.data.GridStyle
-import com.example.a365wallpaper.data.Target
 import com.example.a365wallpaper.data.WallpaperMode
+import com.example.a365wallpaper.data.WallpaperTarget
+import com.example.a365wallpaper.toColors
 import com.example.a365wallpaper.ui.theme.AppColor
+import com.example.a365wallpaper.ui.theme.DotTheme
+import com.example.a365wallpaper.ui.theme.DotThemes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Wallpaper365HomeScreen(
     viewModel: Wallpaper365ViewModel,
-//    onSave: (Wallpaper365State) -> Unit,
-    onSetWallpaper: () -> Unit,
+    goToDevProfile : () -> Unit
 ) {
-//    var state by remember { mutableStateOf(Wallpaper365State()) }
-    var showTargetSheet by remember { mutableStateOf(false) }
-
+    val context = LocalContext.current
     val mode by viewModel.mode.collectAsState()
     val target by viewModel.setWallpaperTo.collectAsState()
     val gridStyle by viewModel.style.collectAsState()
     val accent by viewModel.selectedAccentColor.collectAsState()
     val showLabel by viewModel.showLabel.collectAsState()
     val showQuote by viewModel.showQuote.collectAsState()
+    val verticalPosition by viewModel.verticalPosition.collectAsState()
 
-    Scaffold(
-        containerColor = AppColor.RootBg,
-        topBar = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 5.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Title row (like image)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "365 Wallpaper",
-                            color = AppColor.TextPrimary,
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = (-0.4).sp
-                            )
-                        )
-                        Text(
-                            "Calendar art for your Home & Lock screens",
-                            color = AppColor.TextSecondary,
-                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(AppColor.GlassBg),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = PhosphorIcons.Regular.SlidersHorizontal,
-                            contentDescription = "Options",
-                            tint = AppColor.TextSecondary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-
-                // Mode segmented (Year / Month / Goals)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        "Mode",
-                        color = AppColor.TextSecondary,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 13.sp
-                        )
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    SegmentedPill(
-                        items = WallpaperMode.entries,
-                        selected = mode,
-                        onSelected = { viewModel.updateMode(it) },
-                        label = { it.label },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-//                Spacer(Modifier.height(0.5.dp))
-
-            }
-        },
-        bottomBar = {
-            BottomActionSheet(
-                target = target,
-                onTargetClick = { newTarget ->
-                    viewModel.updateSetWallpaperTo(newTarget)
-                },
-                onSave = {
-//                    onSave(state)
-                },
-                onSetWallpaper ={
-                    onSetWallpaper()
-                },
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 110.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            Spacer(Modifier.height(6.dp))
-
-            // Preview area (like image)
-            PreviewSection(
-                mode = mode,
-                accent = accent,
-                target = target,
-                gridStyle = gridStyle,
-                showQuote = showQuote
-            )
-
-            // Controls (meaningful)
-            GlassCard(title = "Style") {
-                ChipRow(
-                    items = GridStyle.entries,
-                    selected = gridStyle,
-                    onSelected = { viewModel.updateStyle(it) },
-                    label = { it.label }
-                )
-            }
-
-            GlassCard(title = "Accent color") {
-                ColorRow(
-                    colors = AppColor.Accents,
-                    selected = accent,
-                    onSelected = { viewModel.updateAccentColor(color = it) }
-                )
-            }
-
-            GlassCard(title = "Elements") {
-                ToggleRow(
-                    icon = PhosphorIcons.Regular.CalendarBlank,
-                    title = "Show label",
-                    subtitle = "Example: 331d left • 9%",
-                    checked = showLabel,
-                    onCheckedChange = { viewModel.togleShowLabel() }
-                )
-//                DividerThin()
-//                ToggleRow(
-//                    icon = PhosphorIcons.Regular.DotsNine,
-//                    title = "Show progress dots",
-//                    subtitle = "Track streak/progress visually",
-//                    checked = state.showDots,
-//                    onCheckedChange = { state = state.copy(showDots = it) }
-//                )
-                DividerThin()
-                ToggleRow(
-                    icon = PhosphorIcons.Regular.Quotes,
-                    title = "Show quote",
-                    subtitle = "Small motivational line",
-                    checked = showQuote,
-                    onCheckedChange = { viewModel.togleShowQuote() }
-                )
-            }
-
-            Spacer(Modifier.height(10.dp))
-        }
+    val lazyListState = rememberLazyListState()
+    val showMiniPreview by remember { mutableStateOf(false)
+//        derivedStateOf {
+//            lazyListState.firstVisibleItemIndex > 0 ||
+//                    lazyListState.firstVisibleItemScrollOffset > 1300
+//        }
     }
 
-//    if (showTargetSheet) {
-//        TargetPickerSheet(
-//            current = state.target,
-//            onDismiss = { showTargetSheet = false },
-//            onSelect = {
-//                state = state.copy(target = it)
-//                showTargetSheet = false
-//            }
-//        )
-//    }
+//    Log.d("lazy", "${lazyListState.firstVisibleItemIndex},firstVisibleItemScrollOffset = ${lazyListState.firstVisibleItemScrollOffset } ")
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            containerColor = AppColor.RootBg,
+            topBar = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 5.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "365 Wallpaper",
+                                color = AppColor.TextPrimary,
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = (-0.4).sp
+                                )
+                            )
+                            Text(
+                                "Calendar art for your Home & Lock screens",
+                                color = AppColor.TextSecondary,
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(AppColor.GlassBg)
+                                .clickable(
+                                    onClick =  goToDevProfile
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = PhosphorIcons.Regular.DevToLogo,
+                                contentDescription = "DevProfile",
+                                tint = AppColor.TextSecondary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Mode",
+                            color = AppColor.TextSecondary,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 13.sp
+                            )
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        SegmentedPill(
+                            items = WallpaperMode.entries,
+                            selected = mode,
+                            onSelected = { viewModel.updateMode(it) },
+                            label = { it.label },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            },
+            bottomBar = {
+                BottomActionSheet(
+                    target = target,
+                    onTargetClick = { newTarget ->
+                        viewModel.updateSetWallpaperTo(newTarget)
+                    },
+                    onStopService = {
+                        val toastMessage = viewModel.cancelAutoDailyWallpaperUpdate()
+                        Toast.makeText(context, toastMessage, Toast.LENGTH_SHORT).show()
+                    },
+                    onSetWallpaper = {
+                        viewModel.runDailyWallpaperWorker(target)
+                        viewModel.scheduleAutoDailyWallpaperUpdate()
+                    },
+                )
+            }
+        ) { padding ->
+            LazyColumn(
+                state = lazyListState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+//                Spacer(Modifier.height(6.dp))
+
+                item {
+                    PreviewSection(
+                        mode = mode,
+                        dotTheme = accent,
+                        target = target,
+                        gridStyle = gridStyle,
+                        showQuote = showQuote,
+                        verticalPosition = verticalPosition,
+                        showLabel = showLabel
+                    )
+                }
+                item {
+                    GlassCard(title = "Accent color") {
+                        ColorRow(
+                            colors = DotThemes,
+                            selected = accent,
+                            onSelected = { viewModel.updateAccentColor(color = it) }
+                        )
+                    }
+                }
+
+                item {
+                    GlassCard(title = "Positioning") {
+                        VerticalPositionSlider(
+                            position = verticalPosition,
+                            onPositionChange = { viewModel.updateVerticalPosition(it) }
+                        )
+                    }
+                }
+
+                item {
+                    GlassCard(title = "Style") {
+                        ChipRow(
+                            items = GridStyle.entries,
+                            selected = gridStyle,
+                            onSelected = { viewModel.updateStyle(it) },
+                            label = { it.label }
+                        )
+                    }
+                }
+
+                item {
+                    GlassCard(title = "Add Goal") {
+                        ChipRow(
+                            items = GridStyle.entries,
+                            selected = gridStyle,
+                            onSelected = { viewModel.updateStyle(it) },
+                            label = { it.label }
+                        )
+                    }
+                }
+
+                item {
+                    GlassCard(title = "Elements") {
+                        ToggleRow(
+                            icon = PhosphorIcons.Regular.CalendarBlank,
+                            title = "Show label",
+                            subtitle = "Example: 331d left • 9%",
+                            checked = showLabel,
+                            onCheckedChange = { viewModel.toggleShowLabel(!showLabel) }
+                        )
+                        ToggleRow(
+                            icon = PhosphorIcons.Regular.Quotes,
+                            title = "Show quote",
+                            subtitle = "Small motivational line",
+                            checked = showQuote,
+                            onCheckedChange = { viewModel.toggleShowQuote() }
+                        )
+                    }
+                    Spacer(Modifier.height(10.dp))
+
+                }
+
+
+
+
+
+
+
+
+
+            }
+        }
+
+        // Mini floating preview
+           AnimatedVisibility(
+            visible = showMiniPreview,
+            enter = fadeIn() + slideInVertically(),
+            exit = fadeOut() + slideOutVertically(),
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(top = 100.dp, start = 16.dp)
+        ) {
+            MiniFloatingPreview(
+                mode = mode,
+                dotTheme = accent,
+                gridStyle = gridStyle,
+                verticalPosition = verticalPosition,
+                showLabel = showLabel
+            )
+        }
+    }
 }
 
-/* ----------------------------- UI pieces ----------------------------- */
-
-//private object AppColor {
-//    val RootBg = Color(0xFF0F1117)
-//    val CardBg = Color(0x1A_FFFFFF)        // visible glass
-//    val CardBorder = Color(0x26_FFFFFF)
-//    val GlassBg = Color(0x14_FFFFFF)
-//    val GlassBorder = Color(0x1F_FFFFFF)
-//    val Divider = Color(0x14_FFFFFF)
-//
-//    val TextPrimary = Color(0xFFE2E8F0)
-//    val TextSecondary = Color(0xFF9CA3AF)
-//    val TextMuted = Color(0xFF6B7280)
-//
-//    val Primary = Color(0xFF6366F1)
-//    val Violet = Color(0xFF8B5CF6)
-//
-//    val Accents = listOf(
-//        Color(0xFF6366F1), // indigo
-//        Color(0xFF8B5CF6), // violet
-//        Color(0xFF10B981), // emerald
-//        Color(0xFFF59E0B), // amber
-//        Color(0xFFEF4444)  // red
-//    )
-//}
-
-//private enum class WallpaperMode(val label: String) { Year("Year"), Month("Month"), Goals("Goals") }
-//private enum class Target(val label: String) { Home("Home"), Lock("Lock"), Both("Both") }
-//private enum class GridStyle(val label: String) { Dots("Dots"), Minimal("Minimal"), Ring("Ring") }
-
-//private data class Wallpaper365State(
-//    val mode: WallpaperMode = WallpaperMode.Year,
-//    val target: Target = Target.Both,
-//    val autoUpdate: Boolean = true,
-//    val updateTime: String = "00:05",
-//    val gridStyle: GridStyle = GridStyle.Dots,
-//    val accent: Color = AppColor.Accents.first(),
-//    val showYear: Boolean = true,
-//    val showDots: Boolean = true,
-//    val showQuote: Boolean = false,
-//) {
-//    fun updateNote(): String =
-//        if (autoUpdate) "Updates daily at $updateTime • Battery saver optimized"
-//        else "Auto-update off • Set wallpaper manually"
-//}
+// Mini floating preview wrapper
+@Composable
+private fun MiniFloatingPreview(
+    mode: WallpaperMode,
+    dotTheme: DotTheme,
+    gridStyle: GridStyle,
+    verticalPosition: Float,
+    showLabel: Boolean
+) {
+    Surface(
+        modifier = Modifier
+            .size(width = 110.dp, height = 220.dp),
+        shape = RoundedCornerShape(20.dp),
+        color = AppColor.CardBg.copy(alpha = 0.95f),
+        border = BorderStroke(1.5.dp, AppColor.Primary.copy(alpha = 0.5f)),
+        shadowElevation = 8.dp
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            // ✅ Use parametric version with 50% scale
+            PhonePreviewMock(
+                dotTheme = dotTheme,
+                mode = mode,
+                gridStyle = gridStyle,
+                verticalPosition = verticalPosition,
+                scale = 0.5f,
+                showLabel = showLabel
+            )
+        }
+    }
+}
 
 @Composable
 private fun PreviewSection(
     mode: WallpaperMode,
-    accent: Color,
+    dotTheme: DotTheme,
     gridStyle: GridStyle,
-    target: Target,
+    target: WallpaperTarget,
+    showLabel: Boolean,
     showQuote: Boolean,
+    verticalPosition: Float,
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -283,132 +343,231 @@ private fun PreviewSection(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Top
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        "Live preview",
-                        color = AppColor.TextPrimary,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                    )
-                    Text(
-                        "${mode.label} calendar wallpaper on ${target.label}",
-                        color = AppColor.TextSecondary,
-                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp)
-                    )
-                    Text(
-                        "${gridStyle.label} • ${if (showQuote) "Quote on" else "Quote off"}",
-                        color = AppColor.TextMuted,
-                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp)
-                    )
-                }
+            Text(
+                "Live preview",
+                color = AppColor.TextPrimary,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+            )
 
-            }
-
-            // Phone preview mock
+            // ✅ Full size preview (scale = 1.0f)
             PhonePreviewMock(
-                accent = accent,
-                showQuote = showQuote
+                mode = mode,
+                dotTheme = dotTheme,
+                gridStyle = gridStyle,
+                verticalPosition = verticalPosition,
+                scale = 1.0f,
+                showLabel = showLabel
             )
         }
     }
 }
 
+// ✅ Parametric PhonePreviewMock that accepts scale multiplier
 @Composable
 private fun PhonePreviewMock(
-    accent: Color,
-    showYear: Boolean = true,
-    showQuote: Boolean
+    dotTheme: DotTheme,
+    mode: WallpaperMode,
+    gridStyle: GridStyle,
+    verticalPosition: Float,
+    scale: Float = 1.0f,
+    showLabel: Boolean
 ) {
+    val currentGridStyle by rememberUpdatedState(gridStyle)
+    val capsuleShape = RoundedCornerShape(50)
+
+    // ✅ Scale all dimensions
+    val phoneWidth = (220 * scale).dp
+    val phoneHeight = (440 * scale).dp
+    val containerHeight = (450 * scale).dp
+    val bezelRadius = (38 * scale).dp
+    val bezelWidth = (2 * scale).dp
+    val screenPadding = (6 * scale).dp
+    val screenRadius = (32 * scale).dp
+    val statusPaddingH = (24 * scale).dp
+    val statusPaddingV = (12 * scale).dp
+    val iconSize = (10 * scale).dp
+    val spacerSize = (4 * scale).dp
+    val islandWidth = (60 * scale).dp
+    val islandHeight = (18 * scale).dp
+    val contentTop = (40 * scale).dp
+    val contentBottom = (20 * scale).dp
+    val clockSize = (52 * scale).sp
+    val dateSize = (10 * scale).sp
+    val actionPadding = (20 * scale).dp
+    val actionButtonSize = (40 * scale).dp
+    val actionIconSize = (18 * scale).dp
+    val personIconSize = (10 * scale).dp
+    val personTextSize = (8 * scale).sp
+    val indicatorTop = (12 * scale).dp
+    val indicatorWidth = (80 * scale).dp
+    val indicatorHeight = (4 * scale).dp
+    val dotsPaddingV = (8 * scale).dp
+    val dotsPaddingH = (8 * scale).dp
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(320.dp),
+            .height(containerHeight),
         contentAlignment = Alignment.Center
     ) {
-        // phone body
         Surface(
-            shape = RoundedCornerShape(28.dp),
-            color = Color(0xFF0B0E14),
-            border = BorderStroke(6.dp, Color(0xFF111827))
+            shape = RoundedCornerShape(bezelRadius),
+            color = Color(0xFF1A1A1A),
+            border = BorderStroke(bezelWidth, Color(0xFF333333)),
+            modifier = Modifier.size(width = phoneWidth, height = phoneHeight)
         ) {
-            Column(
+            Box(
                 modifier = Modifier
-                    .width(190.dp)
-                    .height(300.dp)
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(Color(0xFF0E1B33), Color(0xFF0B1222))
-                        )
-                    )
-                    .padding(top = 16.dp)
-                    .padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .padding(screenPadding)
+                    .clip(RoundedCornerShape(screenRadius))
+                    .background(Color.Black)
             ) {
+                // Background
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(dotTheme.bg.toColors())
+                )
 
-                if (showYear) {
-                    Text(
-                        "2026",
-                        color = accent,
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = (-1).sp
-                        )
-                    )
-                }
-
-                if (showQuote) {
-                    Text(
-                        "\"One day at a time.\"",
-                        color = Color.White.copy(alpha = 0.6f),
-                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                        maxLines = 2
-                    )
-                }
-
-                    // simple dot grid
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        repeat(18) { r ->
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                repeat(10) { AppColor ->
-                                    val active = (r * 7 + AppColor) % 5 != 0
-                                    Box(
-                                        modifier = Modifier
-                                            .size(6.dp)
-                                            .clip(CircleShape)
-                                            .background(
-                                                if (active) accent else Color.White.copy(
-                                                    alpha = 0.20f
-                                                )
-                                            )
-                                    )
-                                }
-                            }
-                        }
+                // Status Bar
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = statusPaddingH, vertical = statusPaddingV),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(PhosphorIcons.Regular.LinkedinLogo, null, tint = Color.White, modifier = Modifier.size(iconSize))
+                        Spacer(Modifier.width(spacerSize))
+                        Icon(PhosphorIcons.Regular.ThreadsLogo, null, tint = Color.White, modifier = Modifier.size(iconSize))
+                        Spacer(Modifier.width(spacerSize))
+                        Icon(PhosphorIcons.Regular.DevToLogo, null, tint = Color.White, modifier = Modifier.size(iconSize))
                     }
 
+                    Box(
+                        modifier = Modifier
+                            .size(width = islandWidth, height = islandHeight)
+                            .clip(capsuleShape)
+                            .background(Color.Black)
+                    )
 
-                Spacer(Modifier.weight(1f))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(PhosphorIcons.Regular.WifiHigh, null, tint = Color.White, modifier = Modifier.size(iconSize))
+                        Spacer(Modifier.width(spacerSize))
+                        Icon(PhosphorIcons.Regular.BatteryMedium, null, tint = Color.White, modifier = Modifier.size(iconSize))
+                    }
+                }
 
-                Text(
-                    "streak: 12 days",
-                    color = Color.White.copy(alpha = 0.70f),
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 7.sp),
-                    fontFamily = FontFamily.SansSerif
-                )
+                // Dots Grid
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(vertical = dotsPaddingV, horizontal = dotsPaddingH),
+                    contentAlignment = BiasAlignment(
+                        horizontalBias = 0f,
+                        verticalBias = verticalPosition
+                    )
+                ) {
+                    key(currentGridStyle) {
+                        when (mode) {
+                            WallpaperMode.Year -> MockYearsDots(dotTheme, gridStyle, scale , showLabel)
+                            WallpaperMode.Month -> MockMonthsDots(dotTheme, gridStyle, scale , showLabel)
+                            WallpaperMode.Goals -> MockGoalsDots(dotTheme, gridStyle, scale , showLabel)
+                        }
+                    }
+                }
+
+                // Content Layer
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = contentTop, bottom = contentBottom),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        "Wed Dec 31",
+                        color = Color.White,
+                        fontSize = dateSize
+                    )
+
+                    Text(
+                        "8:00",
+                        color = Color.White.copy(alpha = 0.9f),
+                        fontSize = clockSize,
+                        fontWeight = FontWeight.SemiBold,
+                        style = LocalTextStyle.current.copy(
+                            shadow = Shadow(Color.Black, offset = Offset(0f, 4f * scale), blurRadius = 8f * scale)
+                        )
+                    )
+
+                    Spacer(Modifier.weight(1f))
+
+                    // Bottom Actions
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = actionPadding),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        QuickActionButton(
+                            icon = PhosphorIcons.Regular.Flashlight,
+                            size = actionButtonSize,
+                            iconSize = actionIconSize
+                        )
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Person, null, tint = Color.White, modifier = Modifier.size(personIconSize))
+                                Text(" Personal", color = Color.White, fontSize = personTextSize)
+                            }
+                        }
+                        QuickActionButton(
+                            icon = PhosphorIcons.Regular.Camera,
+                            size = actionButtonSize,
+                            iconSize = actionIconSize
+                        )
+                    }
+
+                    // Home Indicator
+                    Box(
+                        modifier = Modifier
+                            .padding(top = indicatorTop)
+                            .size(width = indicatorWidth, height = indicatorHeight)
+                            .clip(capsuleShape)
+                            .background(Color.White)
+                    )
+                }
+
+
             }
+
         }
     }
 }
 
 @Composable
+private fun QuickActionButton(
+    icon: ImageVector,
+    size: Dp = 40.dp,
+    iconSize: Dp = 18.dp
+) {
+    Box(
+        modifier = Modifier
+            .size(size)
+            .clip(CircleShape)
+            .background(Color.White.copy(alpha = 0.15f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(icon, null, tint = Color.White, modifier = Modifier.size(iconSize))
+    }
+}
+
+@Composable
 private fun BottomActionSheet(
-    target: com.example.a365wallpaper.data.Target,
-    onTargetClick: (com.example.a365wallpaper.data.Target) -> Unit,
-    onSave: () -> Unit,
+    target: WallpaperTarget,
+    onTargetClick: (WallpaperTarget) -> Unit,
+    onStopService: () -> Unit,
     onSetWallpaper: () -> Unit,
 ) {
     Surface(
@@ -423,7 +582,7 @@ private fun BottomActionSheet(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             SegmentedPill(
-                items = com.example.a365wallpaper.data.Target.entries,
+                items = WallpaperTarget.entries,
                 selected = target,
                 onSelected = { selectedTarget ->
                     onTargetClick(selectedTarget)
@@ -438,9 +597,9 @@ private fun BottomActionSheet(
             ) {
                 GlassButton(
                     modifier = Modifier.weight(1f),
-                    text = "Save",
-                    icon = PhosphorIcons.Regular.DownloadSimple,
-                    onClick = onSave
+                    text = "Stop Service",
+                    icon = PhosphorIcons.Regular.Stop,
+                    onClick = onStopService
                 )
                 GradientButton(
                     modifier = Modifier.weight(1f),
@@ -449,15 +608,10 @@ private fun BottomActionSheet(
                     onClick = onSetWallpaper
                 )
             }
-
         }
     }
 }
 
-/**
- * Segmented control pill. For Target in bottom bar we open a picker sheet when tapped,
- * because changing Home/Lock/Both usually needs a confirmation UX.
- */
 @Composable
 private fun <T> SegmentedPill(
     items: List<T>,
@@ -468,6 +622,9 @@ private fun <T> SegmentedPill(
     overrideSelected: T? = null,
     onClick: (() -> Unit)? = null
 ) {
+    val actualSelected = overrideSelected ?: selected
+    val selectedIndex = items.indexOf(actualSelected)
+
     Surface(
         modifier = modifier
             .clip(RoundedCornerShape(999.dp))
@@ -476,28 +633,62 @@ private fun <T> SegmentedPill(
         color = AppColor.GlassBg,
         border = BorderStroke(1.dp, AppColor.GlassBorder)
     ) {
-        Row(
-            modifier = Modifier.padding(4.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            items.forEach { item ->
-                val isSel = (overrideSelected ?: selected) == item
-                Surface(
-                    shape = RoundedCornerShape(999.dp),
-                    color = if (isSel) AppColor.Primary else Color.Transparent,
-                    border = if (isSel) BorderStroke(0.dp, Color.Transparent) else BorderStroke(1.dp, Color.Transparent),
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(999.dp))
-                        .clickable(enabled = onClick == null) { onSelected(item) }
-                ) {
+        Box(modifier = Modifier.padding(4.dp)) {
+            val animatedOffset by animateFloatAsState(
+                targetValue = selectedIndex.toFloat(),
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessLow
+                ),
+                label = "pill_slide"
+            )
+
+            Row(
+                modifier = Modifier.matchParentSize(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                items.forEachIndexed { index, _ ->
+                    if (index == selectedIndex) {
+                        Surface(
+                            shape = RoundedCornerShape(999.dp),
+                            color = AppColor.Primary,
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .graphicsLayer {
+                                    val itemWidth = size.width + 6.dp.toPx()
+                                    translationX = (animatedOffset - index) * itemWidth
+                                }
+                        ) {}
+                    } else {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                items.forEach { item ->
+                    val isSel = actualSelected == item
+
+                    val textColor by animateColorAsState(
+                        targetValue = if (isSel) Color.White else AppColor.TextSecondary,
+                        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
+                        label = "text_color_animation"
+                    )
+
                     Box(
-                        modifier = Modifier.padding(vertical = 8.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(999.dp))
+                            .clickable(enabled = onClick == null) { onSelected(item) }
+                            .padding(vertical = 8.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             label(item),
-                            color = if (isSel) Color.White else AppColor.TextSecondary,
+                            color = textColor,
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 12.sp
@@ -511,7 +702,7 @@ private fun <T> SegmentedPill(
 }
 
 @Composable
-private fun GlassCard(title: String, content: @Composable () -> Unit) {
+fun GlassCard(title: String, content: @Composable () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -565,22 +756,16 @@ private fun <T> ChipRow(
 }
 
 @Composable
-private fun ColorRow(colors: List<Color>, selected: Color, onSelected: (Color) -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        colors.forEach { AppColor ->
-            val sel = AppColor == selected
+private fun ColorRow(colors: DotThemes, selected: DotTheme, onSelected: (DotTheme) -> Unit) {
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        items(colors.All) { appColor ->
+            val sel = appColor == selected
             Box(
                 modifier = Modifier
                     .size(42.dp)
                     .clip(CircleShape)
-                    .background(AppColor.copy(alpha = 0.95f))
-                    .then(
-                        if (sel) Modifier
-                            .padding(0.dp)
-                            .background(Color.Transparent)
-                        else Modifier
-                    )
-                    .clickable { onSelected(AppColor) },
+                    .background(appColor.today.toColors())
+                    .clickable { onSelected(appColor) },
                 contentAlignment = Alignment.Center
             ) {
                 if (sel) {
@@ -596,9 +781,17 @@ private fun ColorRow(colors: List<Color>, selected: Color, onSelected: (Color) -
     }
 }
 
+
+private fun AddGoal(
+    onAddClick : () -> Unit
+
+){
+
+}
+
 @Composable
 private fun ToggleRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     title: String,
     subtitle: String,
     checked: Boolean,
@@ -657,15 +850,10 @@ private fun ToggleRow(
 }
 
 @Composable
-private fun DividerThin() {
-    HorizontalDivider(thickness = 1.dp, color = AppColor.Divider)
-}
-
-@Composable
 private fun GlassButton(
     modifier: Modifier = Modifier,
     text: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     onClick: () -> Unit
 ) {
     Surface(
@@ -697,7 +885,7 @@ private fun GlassButton(
 private fun GradientButton(
     modifier: Modifier = Modifier,
     text: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     onClick: () -> Unit
 ) {
     Surface(
@@ -729,89 +917,3 @@ private fun GradientButton(
         }
     }
 }
-
-///* -------- Target picker bottom sheet (Home / Lock / Both) -------- */
-//
-//@OptIn(ExperimentalMaterial3Api::class)
-//@Composable
-//private fun TargetPickerSheet(
-//    current: Target,
-//    onDismiss: () -> Unit,
-//    onSelect: (Target) -> Unit
-//) {
-//    ModalBottomSheet(
-//        onDismissRequest = onDismiss,
-//        containerColor = Color(0xFF0B0E14),
-//        contentColor = AppColor.TextPrimary
-//    ) {
-//        Column(
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .padding(horizontal = 16.dp)
-//                .padding(bottom = 18.dp),
-//            verticalArrangement = Arrangement.spacedBy(10.dp)
-//        ) {
-//            Text(
-//                "Apply wallpaper to",
-//                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-//                color = AppColor.TextPrimary
-//            )
-//
-//            Target.entries.forEach { t ->
-//                Surface(
-//                    modifier = Modifier
-//                        .fillMaxWidth()
-//                        .clip(RoundedCornerShape(14.dp))
-//                        .clickable { onSelect(t) },
-//                    shape = RoundedCornerShape(14.dp),
-//                    color = AppColor.CardBg,
-//                    border = BorderStroke(1.dp, if (t == current) AppColor.Primary.copy(alpha = 0.6f) else AppColor.CardBorder)
-//                ) {
-//                    Row(
-//                        modifier = Modifier.padding(14.dp),
-//                        verticalAlignment = Alignment.CenterVertically,
-//                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-//                    ) {
-//                        val icon = when (t) {
-//                            Target.Home -> PhosphorIcons.Regular.House
-//                            Target.Lock -> PhosphorIcons.Regular.Lock
-//                            Target.Both -> PhosphorIcons.Regular.SquaresFour
-//                        }
-//                        Box(
-//                            modifier = Modifier
-//                                .size(36.dp)
-//                                .clip(RoundedCornerShape(10.dp))
-//                                .background(AppColor.Primary.copy(alpha = 0.14f)),
-//                            contentAlignment = Alignment.Center
-//                        ) {
-//                            Icon(icon, null, tint = AppColor.Primary, modifier = Modifier.size(18.dp))
-//                        }
-//
-//                        Column(modifier = Modifier.weight(1f)) {
-//                            Text(
-//                                t.label,
-//                                color = AppColor.TextPrimary,
-//                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
-//                            )
-//                            Text(
-//                                when (t) {
-//                                    Target.Home -> "Home screen only"
-//                                    Target.Lock -> "Lock screen only (Android 7+)"
-//                                    Target.Both -> "Apply to both screens"
-//                                },
-//                                color = AppColor.TextMuted,
-//                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp)
-//                            )
-//                        }
-//
-//                        if (t == current) {
-//                            Icon(PhosphorIcons.Regular.Check, null, tint = AppColor.Primary, modifier = Modifier.size(18.dp))
-//                        }
-//                    }
-//                }
-//            }
-//
-//            Spacer(Modifier.height(6.dp))
-//        }
-//    }
-//}
