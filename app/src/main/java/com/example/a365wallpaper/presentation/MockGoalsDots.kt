@@ -1,5 +1,6 @@
 package com.example.a365wallpaper.presentation
 
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.times
+import com.example.a365wallpaper.Goal
 import com.example.a365wallpaper.data.GridStyle
 import com.example.a365wallpaper.toColors
 import com.example.a365wallpaper.ui.theme.DotTheme
@@ -29,133 +31,80 @@ fun MockGoalsDots(
     dotTheme: DotTheme,
     gridStyle: GridStyle,
     scale: Float = 1.0f,
-    showLabel: Boolean
+    showLabel: Boolean,
+    goals: List<Goal> = emptyList(), // ✅ real goals
+    dotSizeMultiplier: Float = 1.0f  // ✅ user-controlled size
 ) {
-    val mockGoals = listOf(
-        MockGoal(
-            title = "Personal",
-            totalDays = 90,
-            currentDayIndex = 22,
-            daysLeft = 68,
-            percentComplete = 83
-        ),
-        MockGoal(
-            title = "Fitness",
-            totalDays = 160,
-            currentDayIndex = 15,
-            daysLeft = 45,
-            percentComplete = 25
-        )
+    // Fall back to mock data if no real goals yet
+    val mockGoals = goals.ifEmpty {
+        listOf(
+        Goal("Personal", java.time.LocalDate.now().minusDays(22), java.time.LocalDate.now().plusDays(68)),
+        Goal("Fitness", java.time.LocalDate.now().minusDays(15), java.time.LocalDate.now().plusDays(145))
     )
+    }
+
+    val totalDots = mockGoals.sumOf { it.totalDays }
+    val autoScale = when {
+        totalDots > 300 -> 0.75f
+        totalDots > 150 -> 0.88f
+        else -> 1.0f
+    }
+    val effectiveDotSize = (scale * 6.dp * autoScale * dotSizeMultiplier)
 
     val columns = 16
 
     Column(
-        modifier = Modifier
-            .padding(horizontal = scale * 8.dp, vertical = scale * 16.dp),
+        modifier = Modifier.padding(horizontal = scale * 8.dp, vertical = scale * 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         mockGoals.forEach { goal ->
-            MockSingleGoal(
-                goal = goal,
-                dotTheme = dotTheme,
-                gridStyle = gridStyle,
-                columns = columns,
-                scale = scale,
-                showLabel = showLabel,
-                modifier = Modifier
-            )
-        }
-    }
-}
-
-@Composable
-private fun MockSingleGoal(
-    goal: MockGoal,
-    dotTheme: DotTheme,
-    gridStyle: GridStyle,
-    columns: Int,
-    scale: Float,
-    modifier: Modifier = Modifier,
-    showLabel: Boolean
-) {
-    val rows = ceil(goal.totalDays / columns.toFloat()).toInt()
-
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(scale * 8.dp)
-    ) {
-        // Title
-        Text(
-            text = goal.title,
-            color = Color.White,
-            fontSize = scale * 12.sp,
-            fontWeight = FontWeight.Normal
-        )
-
-        // Dots Grid
-        Column(
-            verticalArrangement = Arrangement.spacedBy(scale * 4.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            repeat(rows) { rowIndex ->
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(scale * 4.dp)
+            val rows = ceil(goal.totalDays / columns.toFloat()).toInt()
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(scale * 6.dp)
+            ) {
+                Text(
+                    text = goal.title,
+                    color = Color.White,
+                    fontSize = scale * 11.sp,
+                    fontWeight = FontWeight.Normal
+                )
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(scale * 3.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    repeat(columns) { colIndex ->
-                        val dayIndex = rowIndex * columns + colIndex
-
-                        if (dayIndex < goal.totalDays) {
-                            val dotColor = when {
-                                dayIndex == goal.currentDayIndex -> dotTheme.today.toColors()
-                                dayIndex < goal.currentDayIndex -> dotTheme.filled.toColors()
-                                else -> dotTheme.empty.toColors()
+                    repeat(rows) { rowIndex ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(scale * 3.dp)) {
+                            repeat(columns) { colIndex ->
+                                val dayIndex = rowIndex * columns + colIndex
+                                if (dayIndex < goal.totalDays) {
+                                    val dotColor = when {
+                                        dayIndex == goal.currentDayIndex -> dotTheme.today.toColors()
+                                        dayIndex < goal.currentDayIndex -> dotTheme.filled.toColors()
+                                        else -> dotTheme.empty.toColors()
+                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .size(effectiveDotSize)
+                                            .clip(gridStyle.shape)
+                                            .background(dotColor)
+                                    )
+                                } else {
+                                    Spacer(Modifier.size(effectiveDotSize))
+                                }
                             }
-
-                            Box(
-                                modifier = Modifier
-                                    .size(scale * 6.dp)
-                                    .clip(gridStyle.shape)
-                                    .background(dotColor)
-                            )
-                        } else {
-                            // Empty space for alignment
-                            Spacer(Modifier.size(scale * 6.dp))
                         }
                     }
                 }
+                if (showLabel) {
+                    Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                        Text("${goal.daysLeft}d left ", color = dotTheme.today.toColors(), fontWeight = FontWeight.Bold, fontSize = scale * 8.sp)
+                        Text("· ${goal.percentComplete}%", color = Color.Gray, fontSize = scale * 8.sp)
+                    }
+                }
+                Spacer(Modifier.height(scale * 8.dp))
             }
         }
-
-        // Stats Text
-        if (showLabel){
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "${goal.daysLeft}d left ",
-                    color = dotTheme.today.toColors(),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = scale * 8.sp
-                )
-                Text(
-                    text = "· ${goal.percentComplete}%",
-                    color = Color.Gray,
-                    fontSize = scale * 8.sp
-                )
-            }
-        }
-        Spacer(Modifier.height(scale * 4.dp))
     }
 }
-
-private data class MockGoal(
-    val title: String,
-    val totalDays: Int,
-    val currentDayIndex: Int,
-    val daysLeft: Int,
-    val percentComplete: Int
-)

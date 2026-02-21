@@ -7,14 +7,17 @@ import androidx.work.WorkerParameters
 import com.example.a365wallpaper.data.GridStyle
 import com.example.a365wallpaper.data.WallpaperMode
 import com.example.a365wallpaper.data.WallpaperTarget
+import com.example.a365wallpaper.data.database.AppDao
 import com.example.a365wallpaper.data.database.LogDao
 import com.example.a365wallpaper.data.database.LogEntity
 import com.example.a365wallpaper.ui.theme.DotThemes
+import com.example.a365wallpaper.utils.toExternalModel
 import java.time.LocalDate
 
 class DailyWallpaperWorker(
     appContext: Context,
     params: WorkerParameters,
+    private val appDao: AppDao,
     private val logDao: LogDao
 ) : CoroutineWorker(appContext, params) {
 
@@ -25,62 +28,47 @@ class DailyWallpaperWorker(
         return try {
             val target = inputData.getString(KEY_TARGET)
                 ?.let { WallpaperTarget.valueOf(it) } ?: WallpaperTarget.Both
-
-            val themeId = inputData.getString(KEY_THEME_ID) ?: "classic"
-            val selectedTheme = DotThemes.byId(themeId)
-
-            val gridStyle = inputData.getString(KEY_GRID_STYLE)
-                ?.let { GridStyle.valueOf(it) } ?: GridStyle.Dots
-
-            val verticalBias = inputData.getFloat(KEY_VERTICAL_BIAS, 0f)
-
+//
+//            val themeId = inputData.getString(KEY_THEME_ID) ?: "classic"
+//            val selectedTheme = DotThemes.byId(themeId)
+//
+//            val gridStyle = inputData.getString(KEY_GRID_STYLE)
+//                ?.let { GridStyle.valueOf(it) } ?: GridStyle.Dots
+//
+//            val verticalBias = inputData.getFloat(KEY_VERTICAL_BIAS, 0f)
+//
             val mode = inputData.getString(KEY_MODE)
                 ?.let { WallpaperMode.valueOf(it) } ?: WallpaperMode.Year
-
-            val showLabel = inputData.getBoolean(KEY_SHOW_LABEL, true)
-
-            val todayIndex = computeTodayIndex()
+//
+//            val showLabel = inputData.getBoolean(KEY_SHOW_LABEL, true)
+//
             val size = getWallpaperSizePx(applicationContext)
 
+
             val bmp = when (mode) {
-                WallpaperMode.Year -> generateYearDotsBitmap(
-                    size.width, size.height,
-                    YearDotsSpec(
-                        gridStyle = gridStyle,
-                        verticalBias = verticalBias,
-                        theme = selectedTheme,
-                        totalDays = 365,
-                        todayIndex = todayIndex,
-                        showLabel = showLabel
+                WallpaperMode.Year -> {
+                    val yearDotsSpec = appDao.getYearThemeConfig().toExternalModel()
+                    generateYearDotsBitmap(
+                        size.width, size.height,
+                        yearDotsSpec
                     )
-                )
+                }
 
-                WallpaperMode.Month -> generateMonthDotsBitmap(
-                    size.width, size.height,
-                    MonthDotsSpec(
-                        gridStyle = gridStyle,
-                        verticalBias = verticalBias,
-                        theme = selectedTheme,
-                        showLabel = showLabel
+                WallpaperMode.Month -> {
+                    val monthDotsSpec = appDao.getMonthThemeConfig().toExternalModel()
+                    generateMonthDotsBitmap(
+                        size.width, size.height,
+                        monthDotsSpec
                     )
-                )
+                }
 
-                WallpaperMode.Goals -> generateGoalsDotsBitmap(
-                    size.width, size.height,
-                    GoalsDotsSpec(
-                        goals = listOf(
-                            Goal(
-                                "Android Interview Practice",
-                                startDate = LocalDate.now(),
-                                deadline = LocalDate.of(2026, 3, 15)
-                            )
-                        ),
-                        gridStyle = gridStyle,
-                        verticalBias = verticalBias,
-                        theme = selectedTheme,
-                        showLabel = showLabel
+                WallpaperMode.Goals -> {
+                    val goalsDotsSpec = appDao.getGoalsThemeConfig().toExternalModel()
+                    generateGoalsDotsBitmap(
+                        size.width, size.height,
+                        goalsDotsSpec
                     )
-                )
+                }
             }
 
             WallpaperSetter(applicationContext).set(bmp, target, size)
@@ -100,11 +88,6 @@ class DailyWallpaperWorker(
         runCatching { logDao.insertLog(LogEntity(message = message)) }
     }
 
-    private fun computeTodayIndex(): Int {
-        val today = LocalDate.now()
-        val start = LocalDate.of(today.year, 1, 1)
-        return (today.toEpochDay() - start.toEpochDay()).toInt()
-    }
 
     companion object {
         private const val TAG = "DailyWallpaperWorker"

@@ -12,7 +12,8 @@ val Pink40 = Color(0xFF7D5260)
 
 object AppColor {
     val RootBg = Color(0xFF0F1117)
-    val CardBg = Color(0x1A_FFFFFF)        // visible glass
+    val CardBg = Color(0x11FFFFFF)        // visible glass
+    val DialogBg = Color(0xFF363636)
     val CardBorder = Color(0x26_FFFFFF)
     val GlassBg = Color(0x14_FFFFFF)
     val GlassBorder = Color(0x1F_FFFFFF)

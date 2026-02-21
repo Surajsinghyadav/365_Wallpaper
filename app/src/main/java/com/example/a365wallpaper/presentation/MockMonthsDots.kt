@@ -31,11 +31,13 @@ fun MockMonthsDots(
     dotTheme: DotTheme,
     gridStyle: GridStyle,
     scale: Float = 1.0f,
-    showLabel: Boolean
-){
+    showLabel: Boolean,
+    dotSizeMultiplier: Float = 1.0f // ✅ new
+) {
     val currentDate = LocalDate.now()
     val noOfDays = currentDate.lengthOfMonth()
     val today = currentDate.dayOfMonth
+    val dotSize = scale * 16.dp * dotSizeMultiplier // ✅ size-aware
 
     Column(
         modifier = Modifier.padding(horizontal = scale * 8.dp, vertical = scale * 16.dp),
@@ -43,7 +45,6 @@ fun MockMonthsDots(
         verticalArrangement = Arrangement.Center
     ) {
         Spacer(Modifier.height(scale * 40.dp))
-
         LazyVerticalGrid(
             columns = GridCells.Fixed(7),
             verticalArrangement = Arrangement.spacedBy(scale * 12.dp),
@@ -53,42 +54,26 @@ fun MockMonthsDots(
                 val dotColor = when {
                     d < today -> dotTheme.filled.toColors()
                     d == today -> dotTheme.today.toColors()
-                    d >= today -> dotTheme.empty.toColors()
                     else -> dotTheme.empty.toColors()
                 }
-
                 Box(
                     modifier = Modifier
-                        .size(scale * 16.dp)
+                        .size(dotSize) // ✅ uses multiplier
                         .clip(gridStyle.shape)
                         .background(dotColor)
                 )
             }
         }
-
         Spacer(Modifier.height(scale * 6.dp))
-
-
-        if (showLabel){
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    "68d left ",
-                    color = dotTheme.today.toColors(),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = scale * 8.sp
-                )
-                Text(
-                    "· 83%",
-                    color = Color.Gray,
-                    fontSize = scale * 8.sp
-                )
+        if (showLabel) {
+            val daysLeft = noOfDays - today
+            val percent = (today * 100) / noOfDays
+            Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                Text("${daysLeft}d left ", color = dotTheme.today.toColors(), fontWeight = FontWeight.Bold, fontSize = scale * 8.sp)
+                Text("· $percent%", color = Color.Gray, fontSize = scale * 8.sp)
             }
         }
-
-
         Spacer(Modifier.height(scale * 10.dp))
     }
 }
+

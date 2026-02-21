@@ -10,17 +10,15 @@ import androidx.core.graphics.toColorInt
 import com.example.a365wallpaper.data.GridStyle
 import com.example.a365wallpaper.ui.theme.DotTheme
 import com.example.a365wallpaper.ui.theme.DotThemes
+import java.time.LocalDate
 import kotlin.math.ceil
 
 data class YearDotsSpec(
-    val totalDays: Int = 365,
-    val todayIndex: Int,
     val columns: Int = 15,
     val gridStyle: GridStyle = GridStyle.Dots,
     val verticalBias: Float = 0f,
     val theme: DotTheme = DotThemes.All.first(),
     val showLabel: Boolean,
-
     val topPaddingFrac: Float = 0.20f,
     val bottomPaddingFrac: Float = 0.10f,
     val gridToTextGapFrac: Float = 0.03f,
@@ -33,22 +31,24 @@ fun generateYearDotsBitmap(
     heightPx: Int,
     spec: YearDotsSpec
 ): Bitmap {
+    val date = LocalDate.now()
+    val todayIndex = date.dayOfYear - 1
+    val totalDays = date.lengthOfYear()
     val bmp = createBitmap(widthPx, heightPx)
     val canvas = Canvas(bmp)
     canvas.drawColor(spec.theme.bg)
 
-    val total = spec.totalDays.coerceAtLeast(1)
-    val today = spec.todayIndex.coerceIn(0, total - 1)
+    val today = todayIndex.coerceIn(0, totalDays - 1)
     val cols = spec.columns.coerceAtLeast(1)
-    val rows = ceil(total / cols.toFloat()).toInt()
+    val rows = ceil(totalDays / cols.toFloat()).toInt()
 
     val sidePadding = widthPx * spec.sidePaddingFrac
 
     // ----------------------------
     // 1) Text measurements (needed for total content height calculation)
     // ----------------------------
-    val daysLeft = (total - 1) - today
-    val percent = ((today + 1) * 100) / total
+    val daysLeft = (totalDays - 1) - today
+    val percent = ((today + 1) * 100) / totalDays
 
     val leftText = "${daysLeft}d left"
     val rightText = " · $percent%"
@@ -108,7 +108,7 @@ fun generateYearDotsBitmap(
     // ----------------------------
     val dotPaint = Paint(Paint.ANTI_ALIAS_FLAG)
 
-    for (i in 0 until total) {
+    for (i in 0 until totalDays) {
         val r = i / cols
         val c = i % cols
 

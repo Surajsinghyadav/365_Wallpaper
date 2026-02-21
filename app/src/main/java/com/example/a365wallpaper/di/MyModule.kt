@@ -6,7 +6,6 @@ import com.example.a365wallpaper.data.database.AppDatabase
 import com.example.a365wallpaper.presentation.LogsViewModel
 import com.example.a365wallpaper.presentation.Wallpaper365ViewModel
 import org.koin.android.ext.koin.androidContext
-import org.koin.androidx.workmanager.dsl.worker
 import org.koin.androidx.workmanager.dsl.workerOf
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module

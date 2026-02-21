@@ -77,6 +77,7 @@ dependencies {
     // koin Worker
     implementation("io.insert-koin:koin-androidx-workmanager:4.1.1")
 
+    implementation(libs.kotlinx.serialization.json)
 
 
 }
