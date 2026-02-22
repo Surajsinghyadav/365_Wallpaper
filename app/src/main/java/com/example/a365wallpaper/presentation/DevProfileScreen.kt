@@ -1,5 +1,7 @@
 package com.example.a365wallpaper.presentation
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,10 +21,25 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.adamglin.PhosphorIcons
+import com.adamglin.phosphoricons.Fill
 import com.adamglin.phosphoricons.Regular
+import com.adamglin.phosphoricons.fill.AndroidLogo
+import com.adamglin.phosphoricons.fill.ArrowLeft
+import com.adamglin.phosphoricons.fill.ArrowSquareOut
+import com.adamglin.phosphoricons.fill.Bug
+import com.adamglin.phosphoricons.fill.CaretRight
+import com.adamglin.phosphoricons.fill.GithubLogo
+import com.adamglin.phosphoricons.fill.Globe
+import com.adamglin.phosphoricons.fill.LinkedinLogo
+import com.adamglin.phosphoricons.fill.ListChecks
+import com.adamglin.phosphoricons.fill.Scroll
+import com.adamglin.phosphoricons.fill.ShareNetwork
+import com.adamglin.phosphoricons.fill.ShieldCheck
+import com.adamglin.phosphoricons.fill.SquaresFour
 import com.adamglin.phosphoricons.regular.*
 import com.example.a365wallpaper.ui.theme.AppColor
 import com.example.a365wallpaper.utils.UrlHandler
+import androidx.core.net.toUri
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,8 +52,10 @@ fun DevProfileScreen(
     val linkedinUrl = "https://www.linkedin.com/in/surajsinghyadav/"
     val githubUrl = "https://github.com/Surajsinghyadav"
     val portfolioUrl = "https://surajsinghyadav.in"
-
-
+    val email = "ysurajsingh56@gmail.com"
+    val formUrl = "https://forms.gle/87nPN2XhSsLNTwUU9"
+    val playStoreUrl = "https://play.google.com/store/apps/developer?id=Suraj+Singh+Yadav"
+    val shareText = "Check out 365 Wallpaper app! $playStoreUrl"
 
     Scaffold(
         containerColor = AppColor.RootBg,
@@ -74,7 +93,7 @@ fun DevProfileScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            // DEV INFO CARD
+            // ── DEV INFO CARD ─────────────────────────────────────────────────
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -85,7 +104,6 @@ fun DevProfileScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // avatar
                     Box(
                         modifier = Modifier
                             .size(56.dp)
@@ -94,7 +112,7 @@ fun DevProfileScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = PhosphorIcons.Regular.AndroidLogo,
+                            imageVector = PhosphorIcons.Fill.AndroidLogo,
                             contentDescription = null,
                             tint = AppColor.TextPrimary,
                             modifier = Modifier.size(28.dp)
@@ -128,39 +146,99 @@ fun DevProfileScreen(
                 }
             }
 
-            // LINKS / CONTACT OPTIONS
+            // ── CONNECT ───────────────────────────────────────────────────────
             GlassCard(title = "Connect") {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     ProfileLinkRow(
-                        icon = PhosphorIcons.Regular.LinkedinLogo,
+                        icon = PhosphorIcons.Fill.LinkedinLogo,
                         label = "LinkedIn",
                         value = "linkedin.com/in/surajsinghyadav",
-                        onClick = {
-                            UrlHandler.openUrl(context, linkedinUrl)
-                        }
+                        onClick = { UrlHandler.openUrl(context, linkedinUrl) }
                     )
                     ProfileLinkRow(
-                        icon = PhosphorIcons.Regular.GithubLogo,
+                        icon = PhosphorIcons.Fill.GithubLogo,
                         label = "GitHub",
                         value = "github.com/Surajsinghyadav",
-                        onClick = {
-                            UrlHandler.openUrl(context, githubUrl)
-
-                        }
+                        onClick = { UrlHandler.openUrl(context, githubUrl) }
                     )
                     ProfileLinkRow(
-                        icon = PhosphorIcons.Regular.Globe,
+                        icon = PhosphorIcons.Fill.Globe,
                         label = "Portfolio",
                         value = "surajsinghyadav.in",
-                        onClick = {
-                            UrlHandler.openUrl(context, portfolioUrl)
+                        onClick = { UrlHandler.openUrl(context, portfolioUrl) }
+                    )
+                }
+            }
 
+            // ── MORE ──────────────────────────────────────────────────────────
+            GlassCard(title = "More") {
+                Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
+                    // Share App
+                    MenuNavRow(
+                        icon = PhosphorIcons.Fill.ShareNetwork,
+                        label = "Share App",
+                        onClick = {
+                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, shareText)
+                            }
+                            context.startActivity(Intent.createChooser(intent, "Share via"))
+                        }
+                    )
+
+                    MenuDivider()
+
+                    // More Apps
+                    MenuNavRow(
+                        icon = PhosphorIcons.Fill.SquaresFour,
+                        label = "More Apps",
+                        onClick = { UrlHandler.openUrl(context, playStoreUrl) }
+                    )
+
+                    MenuDivider()
+
+                    // Report a Bug
+                    MenuNavRow(
+                        icon = PhosphorIcons.Fill.Bug,
+                        label = "Report a Bug",
+                        onClick = {UrlHandler.openUrl(
+                            context,
+                            formUrl
+                        )
+                        }
+                    )
+
+                    MenuDivider()
+
+                    // Privacy Policy
+                    MenuNavRow(
+                        icon = PhosphorIcons.Fill.ShieldCheck,
+                        label = "Privacy Policy",
+                        onClick = {
+                            UrlHandler.openUrl(
+                                context,
+                                "https://surajsinghyadav.in/365-wallpaper-privacy"
+                            )
+                        }
+                    )
+
+                    MenuDivider()
+
+                    // Terms of Use
+                    MenuNavRow(
+                        icon = PhosphorIcons.Fill.ListChecks,
+                        label = "Terms of Use",
+                        onClick = {
+                            UrlHandler.openUrl(
+                                context,
+                                "https://surajsinghyadav.in/365-wallpaper-terms"
+                            )
                         }
                     )
                 }
             }
 
-            // LOGS ENTRY – OPENS LOGS SCREEN
+            // ── ACTIVITY / LOGS — always last ─────────────────────────────────
             GlassCard(title = "Activity") {
                 Surface(
                     modifier = Modifier
@@ -183,7 +261,7 @@ fun DevProfileScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                PhosphorIcons.Regular.Scroll,
+                                PhosphorIcons.Fill.Scroll,
                                 contentDescription = null,
                                 tint = AppColor.Primary,
                                 modifier = Modifier.size(18.dp)
@@ -212,7 +290,7 @@ fun DevProfileScreen(
                         }
 
                         Icon(
-                            PhosphorIcons.Regular.CaretRight,
+                            PhosphorIcons.Fill.CaretRight,
                             contentDescription = null,
                             tint = AppColor.TextSecondary,
                             modifier = Modifier.size(16.dp)
@@ -220,8 +298,76 @@ fun DevProfileScreen(
                     }
                 }
             }
+
+            // ── VERSION ───────────────────────────────────────────────────────
+            Text(
+                text = "v1.0.0",
+                color = AppColor.TextMuted,
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
         }
     }
+}
+
+
+
+@Composable
+private fun MenuNavRow(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 4.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(AppColor.GlassBg),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = AppColor.TextSecondary,
+                modifier = Modifier.size(17.dp)
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        Text(
+            text = label,
+            color = AppColor.TextPrimary,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontWeight = FontWeight.Medium,
+                fontSize = 14.sp
+            ),
+            modifier = Modifier.weight(1f)
+        )
+        Icon(
+            PhosphorIcons.Regular.CaretRight,
+            contentDescription = null,
+            tint = AppColor.TextMuted,
+            modifier = Modifier.size(15.dp)
+        )
+    }
+}
+
+@Composable
+private fun MenuDivider() {
+    HorizontalDivider(
+        modifier = Modifier.padding(start = 46.dp),
+        thickness = 0.5.dp,
+        color = AppColor.GlassBorder
+    )
 }
 
 @Composable
@@ -229,10 +375,13 @@ private fun ProfileLinkRow(
     icon: ImageVector,
     label: String,
     value: String,
-    onClick : () -> Unit
+    onClick: () -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(4.dp).clickable(onClick = onClick),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
@@ -257,5 +406,11 @@ private fun ProfileLinkRow(
                 style = MaterialTheme.typography.bodySmall
             )
         }
+        Icon(
+            PhosphorIcons.Regular.ArrowSquareOut,
+            contentDescription = null,
+            tint = AppColor.TextMuted,
+            modifier = Modifier.size(15.dp)
+        )
     }
 }

@@ -4,38 +4,40 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import com.example.a365wallpaper.Goal
-import com.example.a365wallpaper.ui.theme.DotTheme
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 
 @Dao
 interface AppDao {
 
+
+    @Query("SELECT * FROM AppPrefsEntity LIMIT 1")
+    suspend fun getAppPrefs(): AppPrefsEntity?
+
+    @Query("SELECT * FROM AppPrefsEntity LIMIT 1")
+    fun getAppPrefsFlow(): Flow<AppPrefsEntity?>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun saveAppPrefs(appPrefsEntity: AppPrefsEntity)
+
     @Query("SELECT * FROM YearEntity LIMIT 1")
-    fun getYearThemeConfig(): YearEntity
+    suspend fun getYearThemeConfig(): YearEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun saveYearThemeConfig(yearEntity: YearEntity)
 
-
     @Query("SELECT * FROM MonthEntity LIMIT 1")
-    fun getMonthThemeConfig(): MonthEntity
+    suspend fun getMonthThemeConfig(): MonthEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun saveMonthThemeConfig(monthEntity: MonthEntity)
 
 
     @Query("SELECT * FROM GoalsEntity LIMIT 1")
-    fun getGoalsThemeConfig(): GoalsEntity
+    suspend fun getGoalsThemeConfig(): GoalsEntity?
 
     @Query("SELECT * FROM GoalsEntity LIMIT 1")
-    fun getGoalsFlow(): List<Goal>
-
-
+    fun getGoalsFlow(): Flow<GoalsEntity?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun saveGoalsThemeConfig(goal: GoalsEntity)
-
-
+    suspend fun saveGoalsThemeConfig(goalsEntity: GoalsEntity)
 }
