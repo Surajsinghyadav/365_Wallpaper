@@ -14,7 +14,7 @@ import androidx.room.TypeConverters
         GoalsEntity::class,
         LogEntity::class,
     ],
-    version = 5,
+    version = 7,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

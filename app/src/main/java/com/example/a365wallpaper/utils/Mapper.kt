@@ -15,13 +15,14 @@ fun YearDotsSpec.toEntity(): YearEntity = YearEntity(
     gridStyle = gridStyle,
     showLabel = showLabel,
     verticalBias = verticalBias,
-)
+    specialDates = specialDates )
 
 fun YearEntity.toExternalModel(): YearDotsSpec = YearDotsSpec(
     theme = theme,
     gridStyle = gridStyle,
     showLabel = showLabel,
     verticalBias = verticalBias,
+    specialDates = specialDates,
 )
 
 

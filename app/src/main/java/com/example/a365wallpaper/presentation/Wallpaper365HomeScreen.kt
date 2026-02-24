@@ -60,6 +60,7 @@ fun Wallpaper365HomeScreen(
     val monthDotSize by viewModel.monthDotSize.collectAsStateWithLifecycle()
     val goalDotSize by viewModel.goalDotSize.collectAsStateWithLifecycle()
     val wallpaperSetEvent by viewModel.wallpaperSetEvent.collectAsStateWithLifecycle()
+    val specialDates by viewModel.specialDates.collectAsStateWithLifecycle()
 
     var showAddGoalDialog by remember { mutableStateOf(false) }
     val lazyListState = rememberLazyListState()
@@ -295,11 +296,23 @@ fun Wallpaper365HomeScreen(
                         GlassCard(title = "Elements") {
                             ToggleRow(
                                 icon = PhosphorIcons.Regular.CalendarBlank,
-                                title = "Show label",
+                                title = "Show Progress Stats",
                                 subtitle = "Example: 331d left • 9%",
                                 checked = showLabel,
                                 onCheckedChange = { viewModel.toggleShowLabel(!showLabel) }
                             )
+
+                            if (mode == WallpaperMode.Year) {
+                                    SpecialDatesCard(
+                                        specialDates  = specialDates,
+                                        accent        = accent,
+                                        onAdd         = { start, end, color ->
+                                            viewModel.addSpecialDate(start, end, color)
+                                        },
+                                        onRemove      = { id -> viewModel.removeSpecialDate(id) },
+                                    )
+
+                            }
                         }
                         Spacer(Modifier.height(10.dp))
                     }

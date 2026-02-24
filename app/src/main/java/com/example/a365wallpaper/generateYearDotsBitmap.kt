@@ -1,13 +1,15 @@
+// app/src/main/java/com/example/a365wallpaper/generateYearDotsBitmap.kt
 package com.example.a365wallpaper
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
-import android.graphics.Path
 import android.graphics.Typeface
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.toColorInt
 import com.example.a365wallpaper.data.GridStyle
+import com.example.a365wallpaper.data.SpecialDateOfYear
+import com.example.a365wallpaper.data.specialColorFor
 import com.example.a365wallpaper.ui.theme.DotTheme
 import com.example.a365wallpaper.ui.theme.DotThemes
 import java.time.LocalDate
@@ -18,163 +20,129 @@ data class YearDotsSpec(
     val gridStyle: GridStyle = GridStyle.Dots,
     val verticalBias: Float = 0f,
     val theme: DotTheme = DotThemes.All.first(),
-    val showLabel: Boolean,
+    val showLabel: Boolean = true,
     val topPaddingFrac: Float = 0.20f,
     val bottomPaddingFrac: Float = 0.10f,
     val gridToTextGapFrac: Float = 0.03f,
     val gapToDiameterRatio: Float = 0.55f,
     val sidePaddingFrac: Float = 0.08f,
+    // Special dates — empty by default so existing code paths are unaffected
+    val specialDates: List<SpecialDateOfYear> = emptyList(),
 )
 
 fun generateYearDotsBitmap(
     widthPx: Int,
     heightPx: Int,
-    spec: YearDotsSpec
+    spec: YearDotsSpec,
 ): Bitmap {
-    val date = LocalDate.now()
-    val todayIndex = date.dayOfYear - 1
-    val totalDays = date.lengthOfYear()
-    val bmp = createBitmap(widthPx, heightPx)
+    // ── Temporal context ────────────────────────────────────────────────────
+    val today         = LocalDate.now()
+    val todayIndex    = (today.dayOfYear - 1).coerceIn(0, today.lengthOfYear() - 1)
+    val totalDays     = today.lengthOfYear()
+    val currentYear   = today.year
+
+    // ── Canvas ──────────────────────────────────────────────────────────────
+    val bmp    = createBitmap(widthPx, heightPx)
     val canvas = Canvas(bmp)
     canvas.drawColor(spec.theme.bg)
 
-    val today = todayIndex.coerceIn(0, totalDays - 1)
     val cols = spec.columns.coerceAtLeast(1)
     val rows = ceil(totalDays / cols.toFloat()).toInt()
 
-    val sidePadding = widthPx * spec.sidePaddingFrac
+    // ── Geometry ─────────────────────────────────────────────────────────────
+    val sidePadding     = widthPx * spec.sidePaddingFrac
+    val gridAvailableW  = (widthPx - 2f * sidePadding).coerceAtLeast(1f)
+    val ratio           = spec.gapToDiameterRatio.coerceAtLeast(0f)
+    val denomW          = (cols * (1f + ratio) - ratio).coerceAtLeast(0.0001f)
+    val diameter        = (gridAvailableW / denomW).coerceIn(6f, 64f)
+    val radius          = diameter / 2f
+    val step            = diameter + diameter * ratio   // diameter + gap
 
-    // ----------------------------
-    // 1) Text measurements (needed for total content height calculation)
-    // ----------------------------
-    val daysLeft = (totalDays - 1) - today
-    val percent = ((today + 1) * 100) / totalDays
+    val gridW = cols * step - diameter * ratio
+    val gridH = rows * step - diameter * ratio
 
-    val leftText = "${daysLeft}d left"
+    // ── Label measurement (done once, used for layout even if hidden) ────────
+    val daysLeft  = (totalDays - 1) - todayIndex
+    val percent   = ((todayIndex + 1) * 100) / totalDays
+    val leftText  = "${daysLeft}d left"
     val rightText = " · $percent%"
 
     val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textSize = (widthPx * 0.04f).coerceIn(28f, 56f)
         typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
     }
-
-    val textFm = textPaint.fontMetrics
-    val textHeight = (textFm.descent - textFm.ascent)
+    val textFm      = textPaint.fontMetrics
+    val textHeight  = textFm.descent - textFm.ascent
     val gridToTextGap = heightPx * spec.gridToTextGapFrac
 
-    // ----------------------------
-    // 2) Compute dot size (use available width)
-    // ----------------------------
-    val gridAvailableW = (widthPx - 2f * sidePadding).coerceAtLeast(1f)
+    // ── BiasAlignment for the whole content block ────────────────────────────
+    val totalContentHeight  = gridH + gridToTextGap + textHeight
+    val freeSpace           = heightPx - totalContentHeight
+    // verticalBias: -1 = top, 0 = center, +1 = bottom
+    val startY              = freeSpace * (0.5f + spec.verticalBias * 0.5f)
+    val startX              = (widthPx - gridW) / 2f
+    val textBaselineY       = startY + gridH + gridToTextGap - textFm.ascent
 
-    val ratio = spec.gapToDiameterRatio.coerceAtLeast(0f)
-    val denomW = (cols * (1f + ratio) - ratio).coerceAtLeast(0.0001f)
-    val maxDiameterByW = gridAvailableW / denomW
-
-    // Use reasonable max diameter (let height adjust naturally)
-    val diameterClamped = maxDiameterByW.coerceIn(6f, 64f)
-
-    val radius = diameterClamped / 2f
-    val gap = diameterClamped * ratio
-    val step = diameterClamped + gap
-
-    // ----------------------------
-    // 3) Calculate TOTAL content height (grid + gap + text)
-    // ----------------------------
-    val gridW = cols * step - gap
-    val gridH = rows * step - gap
-
-    // ✅ FIXED: Total content = grid + gap + text (Column behavior)
-    val totalContentHeight = gridH + gridToTextGap + textHeight
-
-    // ----------------------------
-    // 4) Apply BiasAlignment to ENTIRE content block
-    // ----------------------------
-    val totalAvailableHeight = heightPx.toFloat()
-    val freeVerticalSpace = totalAvailableHeight - totalContentHeight
-
-    // BiasAlignment: +1=top, 0=center, -1=bottom
-    val contentVerticalOffset = freeVerticalSpace * (0.5f + spec.verticalBias * 0.5f)
-
-    // Grid starts at content offset
-    val startY = contentVerticalOffset
-    val startX = (widthPx - gridW) / 2f
-
-    // ✅ Text sticks below grid with fixed gap
-    val textBaselineY = startY + gridH + gridToTextGap - textFm.ascent
-
-    // ----------------------------
-    // 5) Draw dots
-    // ----------------------------
-    val dotPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-
-    for (i in 0 until totalDays) {
-        val r = i / cols
-        val c = i % cols
-
-        val cx = startX + c * step + radius
-        val cy = startY + r * step + radius
-
-        dotPaint.color = when {
-            i == today -> spec.theme.today
-            i < today -> spec.theme.filled
-            else -> spec.theme.empty
-        }
-
-        when (spec.gridStyle) {
-            GridStyle.Dots -> {
-                canvas.drawCircle(cx, cy, radius, dotPaint)
-            }
-            GridStyle.Squares -> {
-                val s = diameterClamped
-                val left = cx - s / 2f
-                val top = cy - s / 2f
-                canvas.drawRect(left, top, left + s, top + s, dotPaint)
-            }
-            GridStyle.Rounded -> {
-                val s = diameterClamped
-                val left = cx - s / 2f
-                val top = cy - s / 2f
-                val corner = s * 0.3f
-                canvas.drawRoundRect(left, top, left + s, top + s, corner, corner, dotPaint)
-            }
-            GridStyle.Diamond -> {
-                val path = Path().apply {
-                    moveTo(cx, cy - radius)
-                    lineTo(cx + radius, cy)
-                    lineTo(cx, cy + radius)
-                    lineTo(cx - radius, cy)
-                    close()
-                }
-                canvas.drawPath(path, dotPaint)
+    // ── Pre-index special dates by day-of-year for O(1) lookup ───────────────
+    // Build a set of (dayIndex → color) for the current year only
+    val specialColorByDayIndex: Map<Int, Int> = buildMap {
+        spec.specialDates.forEach { sd ->
+            // Clamp range to this year; skip if entirely outside
+            val rangeStart = maxOf(sd.startDate, LocalDate.ofYearDay(currentYear, 1))
+            val rangeEnd   = minOf(sd.endDate,   LocalDate.ofYearDay(currentYear, totalDays))
+            if (rangeStart.isAfter(rangeEnd)) return@forEach
+            var d = rangeStart
+            while (!d.isAfter(rangeEnd)) {
+                // putIfAbsent → first special date in list wins for overlapping ranges
+                if (!containsKey(d.dayOfYear - 1)) put(d.dayOfYear - 1, sd.colorArgb)
+                d = d.plusDays(1)
             }
         }
     }
 
-    // ----------------------------
-    // 6) Draw text (sticks below grid)
-    // ----------------------------
-    if (spec.showLabel){
-        textPaint.textSize = (widthPx * 0.04f).coerceIn(28f, 56f)
-        textPaint.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
-        textPaint.color = spec.theme.today
+    // ── Draw dots ────────────────────────────────────────────────────────────
+    val dotPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+
+    for (i in 0 until totalDays) {
+        val cx = startX + (i % cols) * step + radius
+        val cy = startY + (i / cols) * step + radius
+
+        val specialColor = specialColorByDayIndex[i]
+
+        dotPaint.color = specialColor ?: when {
+            i == todayIndex -> spec.theme.today
+            i < todayIndex  -> spec.theme.filled
+            else            -> spec.theme.empty
+        }
+
+        canvas.drawDot(cx, cy, radius, diameter, spec.gridStyle, dotPaint)
+    }
+
+    // ── Draw label ───────────────────────────────────────────────────────────
+    if (spec.showLabel) {
+        textPaint.apply {
+            textSize = (widthPx * 0.04f).coerceIn(28f, 56f)
+            typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
+            color    = spec.theme.today
+        }
         val leftW = textPaint.measureText(leftText)
 
-        textPaint.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL)
-        textPaint.color = "#A8A8A8".toColorInt()
-        val rightW = textPaint.measureText(rightText)
+        textPaint.apply {
+            typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL)
+            color    = "#A8A8A8".toColorInt()
+        }
+        val startTextX = (widthPx - leftW - textPaint.measureText(rightText)) / 2f
 
-        val totalW = leftW + rightW
-        val startTextX = (widthPx - totalW) / 2f
-
-        // Left (accent)
-        textPaint.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
-        textPaint.color = spec.theme.today
+        textPaint.apply {
+            typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
+            color    = spec.theme.today
+        }
         canvas.drawText(leftText, startTextX, textBaselineY, textPaint)
 
-        // Right (gray)
-        textPaint.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL)
-        textPaint.color = "#A8A8A8".toColorInt()
+        textPaint.apply {
+            typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL)
+            color    = "#A8A8A8".toColorInt()
+        }
         canvas.drawText(rightText, startTextX + leftW, textBaselineY, textPaint)
     }
 

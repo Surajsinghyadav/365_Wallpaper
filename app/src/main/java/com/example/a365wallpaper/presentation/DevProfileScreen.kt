@@ -235,67 +235,12 @@ fun DevProfileScreen(
                             )
                         }
                     )
-                }
-            }
+                    MenuNavRow(
+                        icon = PhosphorIcons.Fill.Scroll,
+                        label = "See all logs",
+                        onClick = onOpenLogs
 
-            // ── ACTIVITY / LOGS — always last ─────────────────────────────────
-            GlassCard(title = "Activity") {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .clickable { onOpenLogs() },
-                    shape = RoundedCornerShape(14.dp),
-                    color = AppColor.GlassBg,
-                    border = BorderStroke(1.dp, AppColor.GlassBorder)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(AppColor.Primary.copy(alpha = 0.14f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                PhosphorIcons.Fill.Scroll,
-                                contentDescription = null,
-                                tint = AppColor.Primary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-
-                        Spacer(Modifier.width(12.dp))
-
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(2.dp)
-                        ) {
-                            Text(
-                                "See all logs",
-                                color = AppColor.TextPrimary,
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 13.sp
-                                )
-                            )
-                            Text(
-                                "Service triggers & wallpaper updates history",
-                                color = AppColor.TextMuted,
-                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp)
-                            )
-                        }
-
-                        Icon(
-                            PhosphorIcons.Fill.CaretRight,
-                            contentDescription = null,
-                            tint = AppColor.TextSecondary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
+                    )
                 }
             }
 

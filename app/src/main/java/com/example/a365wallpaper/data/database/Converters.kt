@@ -3,11 +3,21 @@ package com.example.a365wallpaper.data.database
 import androidx.room.TypeConverter
 import com.example.a365wallpaper.Goal
 import com.example.a365wallpaper.data.GridStyle
+import com.example.a365wallpaper.data.SpecialDateOfYear
 import com.example.a365wallpaper.ui.theme.DotTheme
 import com.example.a365wallpaper.ui.theme.DotThemes
 import kotlinx.serialization.json.Json
 
 class Converters {
+
+    @TypeConverter
+    fun specialDateToJson(specialDates: List<SpecialDateOfYear>) : String =
+        Json.encodeToString(specialDates)
+
+
+    @TypeConverter
+    fun jsonToSpecialDate(specialDateString: String) : List<SpecialDateOfYear> =
+        Json.decodeFromString(specialDateString)
 
     @TypeConverter
     fun dotThemeToString(theme: DotTheme): String =
@@ -30,10 +40,10 @@ class Converters {
 
     @TypeConverter
     fun goalListToJson(goals: List<Goal>): String =
-        Json.Default.encodeToString(goals)
+        Json.encodeToString(goals)
 
     @TypeConverter
     fun jsonToGoalList(value: String): List<Goal> =
-        Json.Default.decodeFromString(value)
+        Json.decodeFromString(value)
 
 }
