@@ -5,6 +5,13 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.example.a365wallpaper.data.database.Dao.AppDao
+import com.example.a365wallpaper.data.database.Dao.LogDao
+import com.example.a365wallpaper.data.database.Entity.AppPrefsEntity
+import com.example.a365wallpaper.data.database.Entity.GoalsEntity
+import com.example.a365wallpaper.data.database.Entity.LogEntity
+import com.example.a365wallpaper.data.database.Entity.MonthEntity
+import com.example.a365wallpaper.data.database.Entity.YearEntity
 
 @Database(
     entities = [
@@ -14,7 +21,7 @@ import androidx.room.TypeConverters
         GoalsEntity::class,
         LogEntity::class,
     ],
-    version = 7,
+    version = 10,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

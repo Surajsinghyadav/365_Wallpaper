@@ -1,30 +1,32 @@
 package com.example.a365wallpaper.utils
 
-import com.example.a365wallpaper.Goal
-import com.example.a365wallpaper.GoalsDotsSpec
-import com.example.a365wallpaper.MonthDotsSpec
-import com.example.a365wallpaper.YearDotsSpec
-import com.example.a365wallpaper.data.database.GoalsEntity
-import com.example.a365wallpaper.data.database.MonthEntity
-import com.example.a365wallpaper.data.database.YearEntity
-import java.time.LocalDate
+import com.example.a365wallpaper.BitmapGenerators.GoalsDotsSpec
+import com.example.a365wallpaper.BitmapGenerators.MonthDotsSpec
+import com.example.a365wallpaper.BitmapGenerators.YearDotsSpec
+import com.example.a365wallpaper.data.database.Entity.GoalsEntity
+import com.example.a365wallpaper.data.database.Entity.MonthEntity
+import com.example.a365wallpaper.data.database.Entity.YearEntity
 
 
 fun YearDotsSpec.toEntity(): YearEntity = YearEntity(
-    theme = theme,
-    gridStyle = gridStyle,
-    showLabel = showLabel,
-    verticalBias = verticalBias,
-    specialDates = specialDates )
-
-fun YearEntity.toExternalModel(): YearDotsSpec = YearDotsSpec(
-    theme = theme,
-    gridStyle = gridStyle,
-    showLabel = showLabel,
-    verticalBias = verticalBias,
-    specialDates = specialDates,
+    theme                   = theme,
+    gridStyle               = gridStyle,
+    showLabel               = showLabel,
+    verticalBias            = verticalBias,
+    specialDates            = specialDates,
+    showNumberInsteadOfDots = showNumberInsteadOfDots,
+    showBothNumberAndDot    = showBothNumberAndDot,
 )
 
+fun YearEntity.toExternalModel(): YearDotsSpec = YearDotsSpec(
+    theme                   = theme,
+    gridStyle               = gridStyle,
+    showLabel               = showLabel,
+    verticalBias            = verticalBias,
+    specialDates            = specialDates,
+    showNumberInsteadOfDots = showNumberInsteadOfDots,
+    showBothNumberAndDot    = showBothNumberAndDot,
+)
 
 fun MonthDotsSpec.toEntity(): MonthEntity = MonthEntity(
     theme = theme,
@@ -32,6 +34,9 @@ fun MonthDotsSpec.toEntity(): MonthEntity = MonthEntity(
     showLabel = showLabel,
     verticalBias = verticalBias,
     dotSizeMultiplier = dotSizeMultiplier,
+    specialDates            = specialDates,
+    showNumberInsteadOfDots = showNumberInsteadOfDots,
+    showBothNumberAndDot    = showBothNumberAndDot,
 )
 
 fun MonthEntity.toExternalModel(): MonthDotsSpec = MonthDotsSpec(
@@ -40,6 +45,9 @@ fun MonthEntity.toExternalModel(): MonthDotsSpec = MonthDotsSpec(
     showLabel = showLabel,
     verticalBias = verticalBias,
     dotSizeMultiplier = dotSizeMultiplier,
+    specialDates            = specialDates,
+    showNumberInsteadOfDots = showNumberInsteadOfDots,
+    showBothNumberAndDot    = showBothNumberAndDot,
 )
 
 
@@ -50,6 +58,9 @@ fun GoalsDotsSpec.toEntity(): GoalsEntity = GoalsEntity(
     showLabel = showLabel,
     verticalBias = verticalBias,
     dotSizeMultiplier = dotSizeMultiplier,
+    specialDates            = specialDates,
+    showNumberInsteadOfDots = showNumberInsteadOfDots,
+    showBothNumberAndDot    = showBothNumberAndDot,
 )
 
 fun GoalsEntity.toExternalModel(): GoalsDotsSpec = GoalsDotsSpec(
@@ -59,4 +70,7 @@ fun GoalsEntity.toExternalModel(): GoalsDotsSpec = GoalsDotsSpec(
     showLabel = showLabel,
     verticalBias = verticalBias,
     dotSizeMultiplier = dotSizeMultiplier,
+    specialDates            = specialDates,
+    showNumberInsteadOfDots = showNumberInsteadOfDots,
+    showBothNumberAndDot    = showBothNumberAndDot,
 )

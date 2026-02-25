@@ -16,7 +16,7 @@ object UrlHandler {
             }
             context.startActivity(intent)
         }catch (e: Exception){
-            Toast.makeText(context, "Error while opening", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Error while opening:", Toast.LENGTH_SHORT).show()
         }
     }
 }
