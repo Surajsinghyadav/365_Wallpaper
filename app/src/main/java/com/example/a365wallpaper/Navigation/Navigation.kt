@@ -15,6 +15,7 @@ import com.example.a365wallpaper.presentation.Menu.DevProfileScreen
 import com.example.a365wallpaper.presentation.Menu.LogsScreen
 import com.example.a365wallpaper.presentation.HomeScreen.Wallpaper365HomeScreen
 import com.example.a365wallpaper.presentation.HomeScreen.Wallpaper365ViewModel
+import com.example.a365wallpaper.presentation.Menu.SettingsScreen
 
 @Composable
 fun AppNav(
@@ -41,12 +42,18 @@ fun AppNav(
 
             entry<DevProfile> {
                 DevProfileScreen(
+                    onBack = { backStack.removeLastOrNull() },
+                    onOpenSettings = { backStack.add(SettingsScreen) },
+                    onOpenLogs     = { backStack.add(LogsScreen) },
+                )
+            }
+
+            entry <SettingsScreen>{
+                SettingsScreen(
                     onBack = {
                         backStack.removeLastOrNull()
                     },
-                    onOpenLogs = {
-                        backStack.add(LogsScreen)
-                    }
+                    viewModel = homeViewModel
                 )
             }
 

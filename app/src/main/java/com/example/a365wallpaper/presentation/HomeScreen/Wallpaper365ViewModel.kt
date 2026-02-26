@@ -64,6 +64,9 @@ class Wallpaper365ViewModel(
     private val _style = MutableStateFlow(GridStyle.Dots)
     val style = _style.asStateFlow()
 
+    private val _showMiniFloatingPreview  = MutableStateFlow<Boolean>(false)
+    val showMiniFloatingPreview = _showMiniFloatingPreview.asStateFlow()
+
     private val _selectedAccentColor = MutableStateFlow(DotThemes.All.first())
     val selectedAccentColor = _selectedAccentColor.asStateFlow()
 
@@ -119,6 +122,7 @@ class Wallpaper365ViewModel(
                 _showLabel.value           = p.showLabel
                 _monthDotSize.value        = p.monthDotSize
                 _goalDotSize.value         = p.goalDotSize
+                _showMiniFloatingPreview.value = p.showMiniFloatingPreview
             }
 
             // 2. Year config — includes toggles + special dates
@@ -200,6 +204,11 @@ class Wallpaper365ViewModel(
         persistAppPrefs()
     }
 
+
+    fun toggleMiniFloatingPreview(){
+        _showMiniFloatingPreview.update { !it }
+        persistAppPrefs()
+    }
 
 
     // ── Special Dates CRUD ────────────────────────────────────────────────────
@@ -343,6 +352,7 @@ class Wallpaper365ViewModel(
                     verticalBias = _verticalPosition.value,
                     monthDotSize = _monthDotSize.value,
                     goalDotSize = _goalDotSize.value,
+                    showMiniFloatingPreview = _showMiniFloatingPreview.value
                 )
             )
         }

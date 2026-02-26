@@ -52,6 +52,7 @@ dependencies {
     implementation(libs.androidx.compose.foundation.layout)
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
+    implementation(libs.androidx.material3)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -71,13 +72,15 @@ dependencies {
     ksp(libs.androidx.room.compiler)
 
     implementation(libs.kotlinx.coroutines.android)
-    implementation("androidx.compose.material:material-icons-extended:1.7.8") // Replace with the latest version
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
     implementation(libs.kotlinx.serialization.core)
 
     // koin Worker
     implementation("io.insert-koin:koin-androidx-workmanager:4.1.1")
 
     implementation(libs.kotlinx.serialization.json)
+
+    implementation("androidx.compose.material3:material3:1.5.0-alpha15")
 
 
 }

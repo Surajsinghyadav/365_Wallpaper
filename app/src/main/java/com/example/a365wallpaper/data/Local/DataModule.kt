@@ -11,6 +11,7 @@ enum class GridStyle(val label: String, val shape: Shape) {
     Rounded("Rounded", AppShapes.RoundedCorner),
     Diamond("Diamond", AppShapes.Diamond)
 }
+enum class SetWallpaperState { Idle, Loading, Done }
 
 
 

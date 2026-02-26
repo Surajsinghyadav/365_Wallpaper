@@ -18,4 +18,5 @@ data class AppPrefsEntity(
     val verticalBias: Float = 0f,
     val monthDotSize: Float = 1.0f,
     val goalDotSize: Float = 1.0f,
+    val showMiniFloatingPreview : Boolean = true
 )

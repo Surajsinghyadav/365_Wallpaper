@@ -5,6 +5,7 @@ import com.example.a365wallpaper.Worker.DailyWallpaperWorker
 import com.example.a365wallpaper.data.database.AppDatabase
 import com.example.a365wallpaper.presentation.Menu.LogsViewModel
 import com.example.a365wallpaper.presentation.HomeScreen.Wallpaper365ViewModel
+import com.example.a365wallpaper.presentation.Menu.SettingsScreen
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.workmanager.dsl.workerOf
 import org.koin.core.module.dsl.viewModel

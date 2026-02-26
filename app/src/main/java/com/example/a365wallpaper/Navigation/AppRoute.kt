@@ -15,3 +15,6 @@ data object DevProfile : AppRoute
 @Serializable
 data object  LogsScreen : AppRoute
 
+@Serializable
+data object  SettingsScreen : AppRoute
+

@@ -25,6 +25,7 @@ import com.adamglin.phosphoricons.Fill
 import com.adamglin.phosphoricons.Regular
 import com.adamglin.phosphoricons.fill.AndroidLogo
 import com.adamglin.phosphoricons.fill.Bug
+import com.adamglin.phosphoricons.fill.GearSix
 import com.adamglin.phosphoricons.fill.GithubLogo
 import com.adamglin.phosphoricons.fill.Globe
 import com.adamglin.phosphoricons.fill.LinkedinLogo
@@ -34,6 +35,8 @@ import com.adamglin.phosphoricons.fill.ShareNetwork
 import com.adamglin.phosphoricons.fill.ShieldCheck
 import com.adamglin.phosphoricons.fill.SquaresFour
 import com.adamglin.phosphoricons.regular.*
+import com.example.a365wallpaper.Navigation.LogsScreen
+import com.example.a365wallpaper.Navigation.SettingsScreen
 import com.example.a365wallpaper.ui.theme.AppColor
 import com.example.a365wallpaper.utils.UrlHandler
 import com.example.a365wallpaper.presentation.HomeScreen.GlassCard
@@ -42,7 +45,8 @@ import com.example.a365wallpaper.presentation.HomeScreen.GlassCard
 @Composable
 fun DevProfileScreen(
     onBack: () -> Unit,
-    onOpenLogs: () -> Unit
+    onOpenSettings: () -> Unit,
+    onOpenLogs: () -> Unit,
 ) {
     val context = LocalContext.current
 
@@ -170,6 +174,12 @@ fun DevProfileScreen(
             // ── MORE ──────────────────────────────────────────────────────────
             GlassCard(title = "More") {
                 Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
+
+                    MenuNavRow(
+                        icon = PhosphorIcons.Fill.GearSix,
+                        label = "Settings",
+                        onClick = onOpenSettings
+                    )
                     // Share App
                     MenuNavRow(
                         icon = PhosphorIcons.Fill.ShareNetwork,
@@ -237,7 +247,6 @@ fun DevProfileScreen(
                         icon = PhosphorIcons.Fill.Scroll,
                         label = "See all logs",
                         onClick = onOpenLogs
-
                     )
                 }
             }

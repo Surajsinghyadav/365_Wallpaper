@@ -36,6 +36,7 @@ import com.adamglin.phosphoricons.Regular
 import com.adamglin.phosphoricons.regular.*
 import com.example.a365wallpaper.BitmapGenerators.Goal
 import com.example.a365wallpaper.data.Local.GridStyle
+import com.example.a365wallpaper.data.Local.SetWallpaperState
 import com.example.a365wallpaper.data.Local.SpecialDateOfGoal
 import com.example.a365wallpaper.data.Local.SpecialDateOfMonth
 import com.example.a365wallpaper.data.Local.SpecialDateOfYear
@@ -51,6 +52,7 @@ import com.example.a365wallpaper.utils.toColors
 import com.example.a365wallpaper.ui.theme.AppColor
 import com.example.a365wallpaper.ui.theme.DotTheme
 import com.example.a365wallpaper.ui.theme.DotThemes
+import kotlinx.coroutines.delay
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -64,6 +66,7 @@ fun Wallpaper365HomeScreen(
     val mode                    by viewModel.mode.collectAsStateWithLifecycle()
     val target                  by viewModel.setWallpaperTo.collectAsStateWithLifecycle()
     val gridStyle               by viewModel.style.collectAsStateWithLifecycle()
+    val showMiniFloatingPreview by viewModel.showMiniFloatingPreview.collectAsStateWithLifecycle()
     val accent                  by viewModel.selectedAccentColor.collectAsStateWithLifecycle()
     val showLabel               by viewModel.showLabel.collectAsStateWithLifecycle()
     val verticalPosition        by viewModel.verticalPosition.collectAsStateWithLifecycle()
@@ -84,18 +87,18 @@ fun Wallpaper365HomeScreen(
     val context = LocalContext.current
     val showMiniPreview by remember {
         derivedStateOf {
-            lazyListState.firstVisibleItemIndex > 6
-//                    lazyListState.firstVisibleItemScrollOffset > 300
+           showMiniFloatingPreview && (lazyListState.firstVisibleItemIndex > 0 ||
+                    lazyListState.firstVisibleItemScrollOffset > 1300)
         }
     }
 
-    if (!isReady) {
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-        )
-        return
-    }
+//    if (!isReady) {
+//        Box(modifier = Modifier
+//            .fillMaxSize()
+//            .background(MaterialTheme.colorScheme.background)
+//        )
+//        return
+//    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
@@ -200,22 +203,27 @@ fun Wallpaper365HomeScreen(
 
                 // ── Live Preview ──────────────────────────────────────────────
                 item {
-                    PreviewSection(
-                        mode = mode,
-                        dotTheme = accent,
-                        gridStyle = gridStyle,
-                        verticalPosition = verticalPosition,
-                        showLabel = showLabel,
-                        goals = goals,
-                        monthDotSize = monthDotSize,
-                        goalDotSize = goalDotSize,
-                        showNumberInsteadOfDots = showNumberInsteadOfDots,
-                        showBothNumberAndDot = showBothNumberAndDot,
-                        specialDatesYear = specialDatesYear,
-                        specialDatesMonth = specialDatesMonth,
-                        specialDatesGoal = specialDatesGoal
+                        PreviewSection(
+                            isReady = isReady,
+                            mode = mode,
+                            dotTheme = accent,
+                            gridStyle = gridStyle,
+                            verticalPosition = verticalPosition,
+                            showLabel = showLabel,
+                            goals = goals,
+                            monthDotSize = monthDotSize,
+                            goalDotSize = goalDotSize,
+                            showNumberInsteadOfDots = showNumberInsteadOfDots,
+                            showBothNumberAndDot = showBothNumberAndDot,
+                            specialDatesYear = specialDatesYear,
+                            specialDatesMonth = specialDatesMonth,
+                            specialDatesGoal = specialDatesGoal
+
 
                         )
+
+
+
                 }
 
                 // ── Accent Color ──────────────────────────────────────────────
@@ -393,7 +401,8 @@ fun Wallpaper365HomeScreen(
                 showBothNumberAndDot    = showBothNumberAndDot,
                 specialDatesYear = specialDatesYear,
                 specialDatesMonth = specialDatesMonth,
-                specialDatesGoal = specialDatesGoal
+                specialDatesGoal = specialDatesGoal,
+                isReady = isReady
             )
         }
 
@@ -426,7 +435,8 @@ private fun PreviewSection(
     showBothNumberAndDot: Boolean = false,
     specialDatesYear: List<SpecialDateOfYear>,
     specialDatesMonth: List<SpecialDateOfMonth>,
-    specialDatesGoal: List<SpecialDateOfGoal>
+    specialDatesGoal: List<SpecialDateOfGoal>,
+    isReady: Boolean
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -441,6 +451,7 @@ private fun PreviewSection(
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
             )
             PhonePreviewMock(
+                isReady = isReady,
                 mode = mode,
                 dotTheme = dotTheme,
                 gridStyle = gridStyle,
@@ -477,6 +488,7 @@ private fun MiniFloatingPreview(
     specialDatesYear: List<SpecialDateOfYear>,
     specialDatesMonth: List<SpecialDateOfMonth>,
     specialDatesGoal: List<SpecialDateOfGoal>,
+    isReady: Boolean,
 ) {
     Surface(
         modifier       = Modifier.size(width = 110.dp, height = 220.dp),
@@ -496,11 +508,12 @@ private fun MiniFloatingPreview(
                 goals = goals,
                 monthDotSize = monthDotSize,
                 goalDotSize = goalDotSize,
-                showNumberInsteadOfDots = showNumberInsteadOfDots,
-                showBothNumberAndDot = showBothNumberAndDot,
                 specialDatesYear = specialDatesYear,
                 specialDatesMonth = specialDatesMonth,
-                specialDatesGoal = specialDatesGoal
+                specialDatesGoal = specialDatesGoal,
+                showNumberInsteadOfDots = showNumberInsteadOfDots,
+                showBothNumberAndDot = showBothNumberAndDot,
+                isReady = isReady
             )
         }
     }
@@ -508,6 +521,7 @@ private fun MiniFloatingPreview(
 
 
 // ── PhonePreviewMock ──────────────────────────────────────────────────────────
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun PhonePreviewMock(
     dotTheme: DotTheme,
@@ -524,6 +538,7 @@ private fun PhonePreviewMock(
     specialDatesGoal: List<SpecialDateOfGoal>,
     showNumberInsteadOfDots: Boolean = false,
     showBothNumberAndDot: Boolean = false,
+    isReady: Boolean,
 ) {
     val currentGridStyle by rememberUpdatedState(gridStyle)
     val capsuleShape   = RoundedCornerShape(50)
@@ -610,6 +625,14 @@ private fun PhonePreviewMock(
                         .padding(vertical = dotsPaddingV, horizontal = dotsPaddingH),
                     contentAlignment = BiasAlignment(horizontalBias = 0f, verticalBias = verticalPosition)
                 ) {
+                    if (!isReady){
+                        Box(Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center){
+                            CircularProgressIndicator()
+                        }
+                        return@Box
+                    }
+
                     key(currentGridStyle) {
                         when (mode) {
                             WallpaperMode.Year -> MockYearsDots(
@@ -904,10 +927,29 @@ private fun BottomActionSheet(
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            SegmentedPill(items = WallpaperTarget.entries, selected = target, onSelected = { onTargetClick(it) }, label = { it.label }, modifier = Modifier.fillMaxWidth())
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                GlassButton(modifier = Modifier.weight(1f), text = "Stop Service", icon = PhosphorIcons.Regular.Stop, onClick = onStopService)
-                AnimatedSetWallpaperButton(modifier = Modifier.weight(1f), isAnimating = isAnimating, onAnimationDone = onAnimationDone, onClick = onSetWallpaper)
+            SegmentedPill(
+                items = WallpaperTarget.entries,
+                selected = target,
+                onSelected = { onTargetClick(it) },
+                label = { it.label },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                GlassButton(
+                    modifier = Modifier.weight(1f),
+                    text = "Stop Service",
+                    icon = PhosphorIcons.Regular.Stop,
+                    onClick = onStopService
+                )
+                AnimatedSetWallpaperButton(
+                    modifier = Modifier.weight(1f),
+                    isAnimating = isAnimating,
+                    onAnimationDone = onAnimationDone,
+                    onClick = onSetWallpaper
+                )
             }
         }
     }
@@ -918,27 +960,24 @@ private fun AnimatedSetWallpaperButton(
     modifier: Modifier = Modifier,
     isAnimating: Boolean,
     onAnimationDone: () -> Unit,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
-    val sweepProgress = remember { Animatable(0f) }
-    var showToast by remember { mutableStateOf(false) }
+    var state by remember { mutableStateOf(SetWallpaperState.Idle) }
 
+    // Drive state from isAnimating
     LaunchedEffect(isAnimating) {
         if (isAnimating) {
-            sweepProgress.snapTo(0f)
-            sweepProgress.animateTo(targetValue = 1f, animationSpec = tween(durationMillis = 1800, easing = LinearEasing))
-            showToast = true
+            state = SetWallpaperState.Loading
+            delay(1500)
+            state = SetWallpaperState.Done
             onAnimationDone()
-        } else {
-            sweepProgress.snapTo(0f)
         }
     }
 
-    val context = LocalContext.current
-    LaunchedEffect(showToast) {
-        if (showToast) {
-            Toast.makeText(context, "✅ Wallpaper updated successfully", Toast.LENGTH_SHORT).show()
-            showToast = false
+    LaunchedEffect(isAnimating) {
+        if (!isAnimating && state == SetWallpaperState.Done) {
+            delay(2000)   // keep "Updated ✔" visible for 2 seconds then reset
+            state = SetWallpaperState.Idle
         }
     }
 
@@ -946,50 +985,67 @@ private fun AnimatedSetWallpaperButton(
         modifier = modifier
             .height(48.dp)
             .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick),
+            .clickable(enabled = state == SetWallpaperState.Idle, onClick = onClick)
+            .background(
+                brush = Brush.linearGradient(listOf(AppColor.Primary, AppColor.Violet)),
+                shape = RoundedCornerShape(16.dp)
+            ),
         contentAlignment = Alignment.Center
     ) {
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.linearGradient(listOf(AppColor.Primary, AppColor.Violet)),
-                RoundedCornerShape(16.dp)
-            ))
+        AnimatedContent(
+            targetState = state,
+            transitionSpec = {
+                fadeIn(tween(300)) togetherWith fadeOut(tween(200))
+            },
+            label = "set_wallpaper_btn"
+        ) { currentState ->
+            when (currentState) {
 
-        if (sweepProgress.value > 0f) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val strokeWidth  = 3.dp.toPx()
-                val cornerRadius = 16.dp.toPx()
-                val w = size.width
-                val h = size.height
-                val perimeter = 2 * (w + h)
-                val drawn     = perimeter * sweepProgress.value
-                val path = Path().apply {
-                    moveTo(cornerRadius, 0f)
-                    var rem = drawn
-                    val topEdge = w - 2 * cornerRadius
-                    if (rem > 0) { lineTo(cornerRadius + minOf(rem, topEdge), 0f); rem -= topEdge }
-                    if (rem > 0) { arcTo(Rect(w - 2 * cornerRadius, 0f, w, 2 * cornerRadius), -90f, minOf(rem / perimeter * 360f, 90f), false); rem -= (Math.PI * cornerRadius / 2).toFloat() }
-                    val rightEdge = h - 2 * cornerRadius
-                    if (rem > 0) { lineTo(w, cornerRadius + minOf(rem, rightEdge)); rem -= rightEdge }
-                    if (rem > 0) { arcTo(Rect(w - 2 * cornerRadius, h - 2 * cornerRadius, w, h), 0f, minOf(rem / perimeter * 360f, 90f), false); rem -= (Math.PI * cornerRadius / 2).toFloat() }
-                    val bottomEdge = w - 2 * cornerRadius
-                    if (rem > 0) { lineTo(w - cornerRadius - minOf(rem, bottomEdge), h); rem -= bottomEdge }
-                    if (rem > 0) { arcTo(Rect(0f, h - 2 * cornerRadius, 2 * cornerRadius, h), 90f, minOf(rem / perimeter * 360f, 90f), false); rem -= (Math.PI * cornerRadius / 2).toFloat() }
-                    val leftEdge = h - 2 * cornerRadius
-                    if (rem > 0) { lineTo(0f, h - cornerRadius - minOf(rem, leftEdge)) }
+                SetWallpaperState.Idle -> {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                    ) {
+                        Icon(
+                            PhosphorIcons.Regular.DeviceMobile,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "Set Wallpaper",
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                        )
+                    }
                 }
-                drawPath(path = path, color = Color(0xFF4ADE80), style = Stroke(width = strokeWidth, cap = StrokeCap.Round))
-            }
-        }
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(PhosphorIcons.Regular.DeviceMobile, null, tint = Color.White, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(8.dp))
-            Text("Set Wallpaper", color = Color.White, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
+                SetWallpaperState.Loading -> {
+                    CircularProgressIndicator(
+                        modifier  = Modifier.size(22.dp),
+                        color     = Color.White,
+                        strokeWidth = 2.5.dp,
+                    )
+                }
+
+                SetWallpaperState.Done -> {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                    ) {
+                        Text(
+                            "Updated ✔",
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                        )
+                    }
+                }
+            }
         }
     }
 }
+
 
 @Composable
 private fun AddGoalDialog(onDismiss: () -> Unit, onConfirm: (Goal) -> Unit) {

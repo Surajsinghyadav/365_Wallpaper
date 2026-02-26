@@ -21,7 +21,7 @@ import com.example.a365wallpaper.data.database.Entity.YearEntity
         GoalsEntity::class,
         LogEntity::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
