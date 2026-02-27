@@ -7,7 +7,7 @@ import androidx.work.WorkerParameters
 import com.example.a365wallpaper.BitmapGenerators.generateGoalsDotsBitmap
 import com.example.a365wallpaper.BitmapGenerators.generateMonthDotsBitmap
 import com.example.a365wallpaper.BitmapGenerators.generateYearDotsBitmap
-import com.example.a365wallpaper.WallPaperUpdator.WallpaperSetter
+import com.example.a365wallpaper.wallpaperUpdater.WallpaperSetter
 import com.example.a365wallpaper.data.Local.WallpaperMode
 import com.example.a365wallpaper.data.Local.WallpaperTarget
 import com.example.a365wallpaper.data.database.Dao.AppDao
@@ -16,7 +16,7 @@ import com.example.a365wallpaper.data.database.Dao.LogDao
 import com.example.a365wallpaper.data.database.Entity.LogEntity
 import com.example.a365wallpaper.data.database.Entity.MonthEntity
 import com.example.a365wallpaper.data.database.Entity.YearEntity
-import com.example.a365wallpaper.WallPaperUpdator.getWallpaperSizePx
+import com.example.a365wallpaper.wallpaperUpdater.getWallpaperSizePx
 import com.example.a365wallpaper.utils.toExternalModel
 
 class DailyWallpaperWorker(
@@ -27,7 +27,7 @@ class DailyWallpaperWorker(
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
-        log("⚙️ Worker started")
+        logger("⚙️ Worker started")
         return try {
             val target = inputData.getString(KEY_TARGET)
                 ?.let { WallpaperTarget.valueOf(it) } ?: WallpaperTarget.Both
@@ -51,7 +51,7 @@ class DailyWallpaperWorker(
                 WallpaperMode.Goals -> {
                     val entity = appDao.getGoalsThemeConfig() ?: GoalsEntity()
                     if (entity.goal.isEmpty()) {
-                        log("⚠️ No goals saved — skipping Goals wallpaper")
+                        logger("⚠️ No goals saved — skipping Goals wallpaper")
                         return Result.success()
                     }
                     val spec = entity.toExternalModel()
@@ -60,18 +60,23 @@ class DailyWallpaperWorker(
             }
 
             WallpaperSetter(applicationContext).set(bmp, target, size)
-            log("✅ Wallpaper set → Mode: $mode | Target: $target")
+            logger("✅ Wallpaper set → Mode: $mode | Target: $target")
             Result.success()
 
         } catch (e: Exception) {
-            log("❌ Failed → ${e::class.simpleName}: ${e.message}")
+            logger("❌ Failed → ${e::class.simpleName}: ${e.message}")
             Result.failure()
         }
     }
 
-    private suspend fun log(message: String) {
+    private suspend fun logger(message: String) {
         Log.d(TAG, message)
-        runCatching { logDao.insertLog(LogEntity(message = message)) }
+        runCatching {
+            val logCount = logDao.getTotalLogsCount()
+            if (logCount > 150 ){
+                logDao.deleteAllLogs()
+            }
+            logDao.insertLog(LogEntity(message = message)) }
     }
 
     companion object {

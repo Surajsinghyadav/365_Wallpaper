@@ -1,4 +1,3 @@
-// app/src/main/java/com/example/a365wallpaper/DotShapeRenderer.kt
 package com.example.a365wallpaper.BitmapGenerators
 
 import android.graphics.Canvas
@@ -44,5 +43,58 @@ fun Canvas.drawDot(
             }
             drawPath(path, paint)
         }
+
+        GridStyle.Hexagon -> {
+            val path = Path().apply {
+                val halfWidth = radius * 0.866f // sqrt(3)/2
+                moveTo(cx, cy - radius)
+                lineTo(cx + halfWidth, cy - radius * 0.5f)
+                lineTo(cx + halfWidth, cy + radius * 0.5f)
+                lineTo(cx, cy + radius)
+                lineTo(cx - halfWidth, cy + radius * 0.5f)
+                lineTo(cx - halfWidth, cy - radius * 0.5f)
+                close()
+            }
+            drawPath(path, paint)
+        }
+
+        GridStyle.Heart -> {
+            val path = Path().apply {
+                moveTo(cx, cy + radius * 0.7f)
+                cubicTo(cx - radius * 1.2f, cy - radius * 0.3f,
+                    cx - radius * 0.5f, cy - radius * 1.2f,
+                    cx, cy - radius * 0.2f)
+                cubicTo(cx + radius * 0.5f, cy - radius * 1.2f,
+                    cx + radius * 1.2f, cy - radius * 0.3f,
+                    cx, cy + radius * 0.7f)
+            }
+            drawPath(path, paint)
+        }
+
+        GridStyle.Star -> {
+            val path = Path().apply {
+                moveTo(cx, cy - radius)
+                quadTo(cx, cy, cx + radius, cy)
+                quadTo(cx, cy, cx, cy + radius)
+                quadTo(cx, cy, cx - radius, cy)
+                quadTo(cx, cy, cx, cy - radius)
+                close()
+            }
+            drawPath(path, paint)
+        }
+
+        GridStyle.Ring -> {
+            val originalStyle = paint.style
+            val originalStroke = paint.strokeWidth
+
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = diameter * 0.15f
+
+            drawCircle(cx, cy, radius * 0.85f, paint)
+
+            paint.style = originalStyle
+            paint.strokeWidth = originalStroke
+        }
+
     }
 }

@@ -37,13 +37,11 @@ fun generateYearDotsBitmap(
     heightPx: Int,
     spec: YearDotsSpec,
 ): Bitmap {
-    // ── Temporal context ──────────────────────────────────────────────────────
-    val today       = LocalDate.now()
-    val todayIndex  = (today.dayOfYear - 1).coerceIn(0, today.lengthOfYear() - 1)
-    val totalDays   = today.lengthOfYear()
+    val today      = LocalDate.now()
+    val todayIndex = (today.dayOfYear - 1).coerceIn(0, today.lengthOfYear() - 1)
+    val totalDays  = today.lengthOfYear()
     val currentYear = today.year
 
-    // ── Canvas ────────────────────────────────────────────────────────────────
     val bmp    = createBitmap(widthPx, heightPx)
     val canvas = Canvas(bmp)
     canvas.drawColor(spec.theme.bg)
@@ -51,39 +49,64 @@ fun generateYearDotsBitmap(
     val cols = spec.columns.coerceAtLeast(1)
     val rows = ceil(totalDays / cols.toFloat()).toInt()
 
-    // ── Geometry ──────────────────────────────────────────────────────────────
+    // ── Side padding ──────────────────────────────────────────────────────────
     val sidePadding    = widthPx * spec.sidePaddingFrac
     val gridAvailableW = (widthPx - 2f * sidePadding).coerceAtLeast(1f)
     val ratio          = spec.gapToDiameterRatio.coerceAtLeast(0f)
-    val colDenominator = (cols * (1f + ratio) - ratio).coerceAtLeast(0.0001f)
-    val diameter       = (gridAvailableW / colDenominator).coerceIn(6f, 64f)
-    val radius         = diameter / 2f
-    val step           = diameter + diameter * ratio
-    val gridW          = cols * step - diameter * ratio
-    val gridH          = rows * step - diameter * ratio
 
-    // ── Label measurement ─────────────────────────────────────────────────────
+    // ── Diameter from WIDTH (original formula) ────────────────────────────────
+    val colDenominator = (cols * (1f + ratio) - ratio).coerceAtLeast(0.0001f)
+    val diameterFromW  = (gridAvailableW / colDenominator).coerceIn(6f, 64f)
+
+    // ── Label height estimation (needed before we know diameter) ──────────────
+    // Use a provisional textSize based on width to estimate vertical space needed
+    val provisionalTextSize = (widthPx * 0.04f).coerceIn(28f, 56f)
+    val provisionalTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textSize = provisionalTextSize
+        typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
+    }
+    val provisionalTextFm = provisionalTextPaint.fontMetrics
+    val provisionalTextH  = provisionalTextFm.descent - provisionalTextFm.ascent
+    val gridToTextGap     = heightPx * spec.gridToTextGapFrac
+
+    // ── Vertical budget: height minus label area and padding ──────────────────
+    // We want the grid to fit within a vertical zone with topPad + bottomPad
+    val labelReserve    = if (spec.showLabel) provisionalTextH + gridToTextGap else 0f
+    val verticalPadding = heightPx * (spec.topPaddingFrac + spec.bottomPaddingFrac)
+    val gridAvailableH  = (heightPx - verticalPadding - labelReserve).coerceAtLeast(1f)
+
+    // ── Diameter from HEIGHT ──────────────────────────────────────────────────
+    val rowDenominator = (rows * (1f + ratio) - ratio).coerceAtLeast(0.0001f)
+    val diameterFromH  = (gridAvailableH / rowDenominator).coerceIn(6f, 64f)
+
+    // ── Use the smaller of the two so grid fits BOTH dimensions ───────────────
+    val diameter = minOf(diameterFromW, diameterFromH)
+    val radius   = diameter / 2f
+    val step     = diameter + diameter * ratio
+    val gridW    = cols * step - diameter * ratio
+    val gridH    = rows * step - diameter * ratio
+
+    // ── Label paint (final, uses same diameter-independent textSize) ──────────
     val daysLeft  = (totalDays - 1) - todayIndex
     val percent   = ((todayIndex + 1) * 100) / totalDays
     val leftText  = "${daysLeft}d left"
     val rightText = " · $percent%"
 
     val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textSize = (widthPx * 0.04f).coerceIn(28f, 56f)
+        textSize = provisionalTextSize
         typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
     }
-    val textFm        = textPaint.fontMetrics
-    val textHeight    = textFm.descent - textFm.ascent
-    val gridToTextGap = heightPx * spec.gridToTextGapFrac
+    val textFm     = textPaint.fontMetrics
+    val textHeight = textFm.descent - textFm.ascent
 
-    // ── BiasAlignment ─────────────────────────────────────────────────────────
-    val totalContentHeight = gridH + gridToTextGap + textHeight
-    val freeSpace          = heightPx - totalContentHeight
-    val startY             = freeSpace * (0.5f + spec.verticalBias * 0.5f)
-    val startX             = (widthPx - gridW) / 2f
-    val textBaselineY      = startY + gridH + gridToTextGap - textFm.ascent
+    // ── BiasAlignment — only uses remaining free space, never overflows ───────
+    val totalContentH = gridH + (if (spec.showLabel) gridToTextGap + textHeight else 0f)
+    val freeSpace     = (heightPx - totalContentH).coerceAtLeast(0f)
+    val startY        = freeSpace * (0.5f + spec.verticalBias * 0.5f)
+    val startX        = (widthPx - gridW) / 2f
+    val textBaselineY = startY + gridH + gridToTextGap - textFm.ascent
 
-    // ── Special dates index: dayIndex (0-based) → colorArgb ──────────────────
+    // ── Special dates index ───────────────────────────────────────────────────
     val specialColorByIndex: Map<Int, Int> = buildMap {
         val yearStart = LocalDate.ofYearDay(currentYear, 1)
         val yearEnd   = LocalDate.ofYearDay(currentYear, totalDays)
@@ -100,8 +123,7 @@ fun generateYearDotsBitmap(
         }
     }
 
-    // ── Number paint (used only when showNumberInsteadOfDots is true) ─────────
-    // Font size scales with dot diameter; min/max clamped for legibility.
+    // ── Number paint ──────────────────────────────────────────────────────────
     val numberPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         typeface  = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
         textSize  = (diameter * 0.52f).coerceIn(6f, 36f)
@@ -123,36 +145,21 @@ fun generateYearDotsBitmap(
         }
 
         when {
-            // ── Mode A: numbers only (no dot drawn unless showBothNumberAndDot) ─
             spec.showNumberInsteadOfDots && !spec.showBothNumberAndDot -> {
                 numberPaint.color = dotColor
-                val dayNumber = (i + 1).toString()
-                // Vertically center: baseline = cy - (ascent+descent)/2
                 val numFm    = numberPaint.fontMetrics
                 val baseline = cy - (numFm.ascent + numFm.descent) / 2f
-                canvas.drawText(dayNumber, cx, baseline, numberPaint)
+                canvas.drawText((i + 1).toString(), cx, baseline, numberPaint)
             }
-
-            // ── Mode B: dot + number overlaid ─────────────────────────────────
             spec.showNumberInsteadOfDots && spec.showBothNumberAndDot -> {
-                // Draw the underlying dot first
                 dotPaint.color = dotColor
                 canvas.drawDot(cx, cy, radius, diameter, spec.gridStyle, dotPaint)
-
-                // Then draw the number on top in contrasting color
-                // Filled/special dots get a dark number; empty dots get the accent color
-                numberPaint.color = if (i <= todayIndex || specialColor != null) {
-                    spec.theme.bg   // dark contrast on filled dot
-                } else {
-                    dotColor        // same as empty dot so it blends gently
-                }
-                val dayNumber = (i + 1).toString()
+                numberPaint.color = if (i <= todayIndex || specialColor != null)
+                    spec.theme.bg else dotColor
                 val numFm    = numberPaint.fontMetrics
                 val baseline = cy - (numFm.ascent + numFm.descent) / 2f
-                canvas.drawText(dayNumber, cx, baseline, numberPaint)
+                canvas.drawText((i + 1).toString(), cx, baseline, numberPaint)
             }
-
-            // ── Mode C: normal dots (default) ─────────────────────────────────
             else -> {
                 dotPaint.color = dotColor
                 canvas.drawDot(cx, cy, radius, diameter, spec.gridStyle, dotPaint)
@@ -163,7 +170,6 @@ fun generateYearDotsBitmap(
     // ── Draw label ────────────────────────────────────────────────────────────
     if (spec.showLabel) {
         textPaint.apply {
-            textSize = (widthPx * 0.04f).coerceIn(28f, 56f)
             typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
             color    = spec.theme.today
         }
@@ -190,3 +196,4 @@ fun generateYearDotsBitmap(
 
     return bmp
 }
+

@@ -13,11 +13,14 @@ interface LogDao {
     @Query("SELECT * FROM LogEntity ORDER BY timeStamp ASC")
     fun getAllLogs(): Flow<List<LogEntity>>
 
-    @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertLog(logEntity: LogEntity)
 
     @Query("SELECT COUNT(*) FROM logentity")
-    fun getTotalLogsCount(): Flow<Int>
+    fun getTotalLogsCountFlow(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM logentity")
+    fun getTotalLogsCount(): Int
 
     @Query("DELETE FROM LogEntity")
     suspend fun deleteAllLogs()

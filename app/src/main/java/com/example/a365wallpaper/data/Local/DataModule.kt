@@ -9,7 +9,12 @@ enum class GridStyle(val label: String, val shape: Shape) {
     Dots("Dots", AppShapes.Circle),
     Squares("Squares", AppShapes.Square),
     Rounded("Rounded", AppShapes.RoundedCorner),
-    Diamond("Diamond", AppShapes.Diamond)
+    Diamond("Diamond", AppShapes.Diamond),
+    Ring("Ring", AppShapes.Ring),
+    Star("Star", AppShapes.Star),
+    Heart("Heart", AppShapes.Heart),
+    Hexagon("Hexagon", AppShapes.Hexagon),
+
 }
 enum class SetWallpaperState { Idle, Loading, Done }
 

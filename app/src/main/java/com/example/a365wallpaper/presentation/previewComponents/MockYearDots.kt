@@ -1,4 +1,4 @@
-package com.example.a365wallpaper.presentation.PreviewComponents
+package com.example.a365wallpaper.presentation.previewComponents
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement

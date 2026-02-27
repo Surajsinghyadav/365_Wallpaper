@@ -1,4 +1,4 @@
-package com.example.a365wallpaper.presentation.HomeScreen
+package com.example.a365wallpaper.presentation.homeScreen
 
 import android.app.Application
 import android.content.Context
@@ -9,6 +9,7 @@ import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.example.a365wallpaper.BitmapGenerators.Goal
@@ -27,6 +28,8 @@ import com.example.a365wallpaper.data.database.Entity.GoalsEntity
 import com.example.a365wallpaper.ui.theme.DotTheme
 import com.example.a365wallpaper.ui.theme.DotThemes
 import com.example.a365wallpaper.utils.toEntity
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -57,14 +60,28 @@ class Wallpaper365ViewModel(
     private val _mode = MutableStateFlow(WallpaperMode.Year)
     val mode = _mode.asStateFlow()
 
+    // FIX 1: SharingStarted.Lazily — only active when first collected,
+    // not polling every 5 seconds on idle devices
+    val isServiceActive: StateFlow<Boolean> = WorkManager.getInstance(appContext)
+        .getWorkInfosForUniqueWorkFlow("DailyWallpaper")
+        .map { workInfos ->
+            val info = workInfos.firstOrNull()
+            info?.state == WorkInfo.State.ENQUEUED || info?.state == WorkInfo.State.RUNNING
+        }
+        .stateIn(
+            viewModelScope,
+            started = SharingStarted.Lazily,
+            initialValue = false,
+        )
+
     private val _setWallpaperTo = MutableStateFlow(loadSavedTarget())
     val setWallpaperTo = _setWallpaperTo.asStateFlow()
 
-    // ── Shared visual prefs (Room-backed) ─────────────────────────────────────
-    private val _style = MutableStateFlow(GridStyle.Dots)
+    // ── Visual prefs (Room-backed) ────────────────────────────────────────────
+    private val _style                = MutableStateFlow(GridStyle.Dots)
     val style = _style.asStateFlow()
 
-    private val _showMiniFloatingPreview  = MutableStateFlow<Boolean>(false)
+    private val _showMiniFloatingPreview = MutableStateFlow(true)
     val showMiniFloatingPreview = _showMiniFloatingPreview.asStateFlow()
 
     private val _selectedAccentColor = MutableStateFlow(DotThemes.All.first())
@@ -76,19 +93,26 @@ class Wallpaper365ViewModel(
     private val _verticalPosition = MutableStateFlow(0f)
     val verticalPosition = _verticalPosition.asStateFlow()
 
+    private val _monthDotSize = MutableStateFlow(1.0f)
+    val monthDotSize = _monthDotSize.asStateFlow()
+
+    private val _goalDotSize = MutableStateFlow(1.0f)
+    val goalDotSize = _goalDotSize.asStateFlow()
+
     // ── Wallpaper set animation trigger ───────────────────────────────────────
     private val _wallpaperSetEvent = MutableStateFlow(false)
     val wallpaperSetEvent = _wallpaperSetEvent.asStateFlow()
 
-    // ── Goals (observed from Room via Flow) ───────────────────────────────────
+    // ── Goals (Room Flow) ─────────────────────────────────────────────────────
     val goals: StateFlow<List<Goal>> = appDao.getGoalsFlow()
         .map { it?.goal ?: emptyList() }
         .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList(),
+            scope         = viewModelScope,
+            started       = SharingStarted.WhileSubscribed(5_000),
+            initialValue  = emptyList(),
         )
 
+    // ── Special Dates ─────────────────────────────────────────────────────────
     private val _specialDatesOfYear  = MutableStateFlow<List<SpecialDateOfYear>>(emptyList())
     val specialDatesOfYear: StateFlow<List<SpecialDateOfYear>> = _specialDatesOfYear.asStateFlow()
 
@@ -98,56 +122,56 @@ class Wallpaper365ViewModel(
     private val _specialDatesOfGoal  = MutableStateFlow<List<SpecialDateOfGoal>>(emptyList())
     val specialDatesOfGoal: StateFlow<List<SpecialDateOfGoal>> = _specialDatesOfGoal.asStateFlow()
 
-    // ── Number toggles (shared across all modes) ──────────────────────────────────
+    // ── Number toggles ────────────────────────────────────────────────────────
     private val _showNumberInsteadOfDots = MutableStateFlow(false)
     val showNumberInsteadOfDots: StateFlow<Boolean> = _showNumberInsteadOfDots.asStateFlow()
 
     private val _showBothNumberAndDot = MutableStateFlow(false)
     val showBothNumberAndDot: StateFlow<Boolean> = _showBothNumberAndDot.asStateFlow()
 
-    // ── Dot sizes ─────────────────────────────────────────────────────────────────
-    private val _monthDotSize = MutableStateFlow(1.0f)
-    val monthDotSize = _monthDotSize.asStateFlow()
+    // ── FIX 2: Debounce jobs — one per persist concern ────────────────────────
+    // Slider drags fire 60x/sec. These jobs cancel + restart on each call,
+    // so Room only writes ONCE after the user lifts their finger (300ms idle).
+    private var prefsDebounceJob:       Job? = null
+    private var yearConfigDebounceJob:  Job? = null
+    private var monthConfigDebounceJob: Job? = null
+    private var goalConfigDebounceJob:  Job? = null
+    private var togglesDebounceJob:     Job? = null
 
-    private val _goalDotSize = MutableStateFlow(1.0f)
-    val goalDotSize = _goalDotSize.asStateFlow()
-
+    // ── Init: load persisted state ────────────────────────────────────────────
     init {
         viewModelScope.launch {
             // 1. Shared visual prefs
             appDao.getAppPrefs()?.let { p ->
-                _selectedAccentColor.value = p.theme
-                _style.value               = p.gridStyle
-                _verticalPosition.value    = p.verticalBias
-                _showLabel.value           = p.showLabel
-                _monthDotSize.value        = p.monthDotSize
-                _goalDotSize.value         = p.goalDotSize
-                _showMiniFloatingPreview.value = p.showMiniFloatingPreview
+                _selectedAccentColor.value       = p.theme
+                _style.value                     = p.gridStyle
+                _verticalPosition.value          = p.verticalBias
+                _showLabel.value                 = p.showLabel
+                _monthDotSize.value              = p.monthDotSize
+                _goalDotSize.value               = p.goalDotSize
+                _showMiniFloatingPreview.value   = p.showMiniFloatingPreview
             }
 
-            // 2. Year config — includes toggles + special dates
+            // 2. Year config
             appDao.getYearThemeConfig()?.let { year ->
-                _specialDatesOfYear.value        = year.specialDates
-                _showNumberInsteadOfDots.value   = year.showNumberInsteadOfDots
-                _showBothNumberAndDot.value      = year.showBothNumberAndDot
+                _specialDatesOfYear.value      = year.specialDates
+                _showNumberInsteadOfDots.value = year.showNumberInsteadOfDots
+                _showBothNumberAndDot.value    = year.showBothNumberAndDot
             }
 
-            // 3. Month config — special dates + toggles
+            // 3. Month config
             appDao.getMonthThemeConfig()?.let { month ->
                 _specialDatesOfMonth.value = month.specialDates
-                // showNumberInsteadOfDots is shared; Year wins on first load.
-                // If you want per-mode toggles, store them separately.
             }
 
-            // 4. Goals config — special dates
-            appDao.getGoalsThemeConfig()?.let { goals ->
-                _specialDatesOfGoal.value = goals.specialDates
+            // 4. Goals special dates
+            appDao.getGoalsThemeConfig()?.let { g ->
+                _specialDatesOfGoal.value = g.specialDates
             }
 
             _isReady.value = true
         }
     }
-
 
     // ── Mode & Target ─────────────────────────────────────────────────────────
 
@@ -161,113 +185,127 @@ class Wallpaper365ViewModel(
         prefs.edit { putString("target", target.name) }
     }
 
-    // ── Shared visual prefs ───────────────────────────────────────────────────
+    // ── Visual prefs — instant UI update, debounced Room write ───────────────
 
     fun updateStyle(style: GridStyle) {
         _style.update { style }
-        persistAppPrefs()
+        // Style changes are discrete (tap, not drag) — no debounce needed
+        persistAppPrefsNow()
     }
 
     fun updateAccentColor(color: DotTheme) {
         _selectedAccentColor.update { color }
-        persistAppPrefs()
+        // Color tap is discrete — no debounce needed
+        persistAppPrefsNow()
     }
 
     fun toggleShowLabel(enabled: Boolean) {
         _showLabel.update { enabled }
-        persistAppPrefs()
+        persistAppPrefsNow()
     }
 
+    // FIX 3: verticalPosition is a SLIDER — debounce the Room write
     fun updateVerticalPosition(position: Float) {
-        _verticalPosition.update { position.coerceIn(-1f, 1f) }
-        persistAppPrefs()
+        _verticalPosition.update { position.coerceIn(-1f, 1f) }  // instant UI
+        prefsDebounceJob?.cancel()
+        prefsDebounceJob = viewModelScope.launch {
+            delay(300)           // wait 300ms after user stops dragging
+            persistAppPrefsNow()
+        }
     }
 
-    fun toggleShowNumberInsteadOfDots(enabled: Boolean) {
-        _showNumberInsteadOfDots.update { enabled }
-        // Turning off parent resets child
-        if (!enabled) _showBothNumberAndDot.update { false }
-        persistYearToggles()
-    }
-
-    fun toggleShowBothNumberAndDot(enabled: Boolean) {
-        _showBothNumberAndDot.update { enabled }
-        persistYearToggles()
-    }
+    // FIX 4: dot size sliders — same debounce treatment
     fun updateMonthDotSize(size: Float) {
         _monthDotSize.update { size.coerceIn(0.25f, 1.0f) }
-        persistAppPrefs()
+        prefsDebounceJob?.cancel()
+        prefsDebounceJob = viewModelScope.launch {
+            delay(300)
+            persistAppPrefsNow()
+        }
     }
 
     fun updateGoalDotSize(size: Float) {
         _goalDotSize.update { size.coerceIn(0.25f, 1.0f) }
-        persistAppPrefs()
+        prefsDebounceJob?.cancel()
+        prefsDebounceJob = viewModelScope.launch {
+            delay(300)
+            persistAppPrefsNow()
+        }
     }
 
-
-    fun toggleMiniFloatingPreview(){
+    fun toggleMiniFloatingPreview() {
         _showMiniFloatingPreview.update { !it }
-        persistAppPrefs()
+        persistAppPrefsNow()
     }
 
+    fun toggleShowNumberInsteadOfDots(enabled: Boolean) {
+        _showNumberInsteadOfDots.update { enabled }
+        if (!enabled) _showBothNumberAndDot.update { false }
+        persistYearTogglesDebounced()
+    }
+
+    fun toggleShowBothNumberAndDot(enabled: Boolean) {
+        _showBothNumberAndDot.update { enabled }
+        persistYearTogglesDebounced()
+    }
 
     // ── Special Dates CRUD ────────────────────────────────────────────────────
 
-    // ── Year ──────────────────────────────────────────────────────────────────────
     fun addSpecialDateYear(startDate: LocalDate, endDate: LocalDate, colorArgb: Int) {
-        val entry = SpecialDateOfYear(
-            id = System.currentTimeMillis().toInt(),
-            startEpochDay = startDate.toEpochDay(),
-            endEpochDay   = endDate.toEpochDay(),
-            colorArgb     = colorArgb,
-        )
-        _specialDatesOfYear.update { it + entry }
-        persistYearConfig()
+        _specialDatesOfYear.update {
+            it + SpecialDateOfYear(
+                id            = System.currentTimeMillis().toInt(),
+                startEpochDay = startDate.toEpochDay(),
+                endEpochDay   = endDate.toEpochDay(),
+                colorArgb     = colorArgb,
+            )
+        }
+        persistYearConfigDebounced()
     }
 
     fun removeSpecialDateYear(id: Int) {
         _specialDatesOfYear.update { it.filter { sd -> sd.id != id } }
-        persistYearConfig()
+        persistYearConfigDebounced()
     }
 
-    // ── Month ─────────────────────────────────────────────────────────────────────
     fun addSpecialDateMonth(startDate: LocalDate, endDate: LocalDate, colorArgb: Int) {
-        val entry = SpecialDateOfMonth(
-            id = System.currentTimeMillis().toInt(),
-            startEpochDay = startDate.toEpochDay(),
-            endEpochDay   = endDate.toEpochDay(),
-            colorArgb     = colorArgb,
-        )
-        _specialDatesOfMonth.update { it + entry }
-        persistMonthConfig()
+        _specialDatesOfMonth.update {
+            it + SpecialDateOfMonth(
+                id            = System.currentTimeMillis().toInt(),
+                startEpochDay = startDate.toEpochDay(),
+                endEpochDay   = endDate.toEpochDay(),
+                colorArgb     = colorArgb,
+            )
+        }
+        persistMonthConfigDebounced()
     }
 
     fun removeSpecialDateMonth(id: Int) {
         _specialDatesOfMonth.update { it.filter { sd -> sd.id != id } }
-        persistMonthConfig()
+        persistMonthConfigDebounced()
     }
 
-    // ── Goals ─────────────────────────────────────────────────────────────────────
-    fun addSpecialDateGoal(startDate: LocalDate, endDate: LocalDate, colorArgb: Int) {
-        val entry = SpecialDateOfGoal(
-            id = System.currentTimeMillis().toInt(),
-            startEpochDay = startDate.toEpochDay(),
-            endEpochDay   = endDate.toEpochDay(),
-            colorArgb     = colorArgb,
-        )
-        _specialDatesOfGoal.update { it + entry }
-        persistGoalSpecialDates()
+    fun addSpecialDateGoal(
+        startDate: LocalDate,
+        endDate: LocalDate,
+        colorArgb: Int,
+        goalTitle: String = "",
+    ) {
+        _specialDatesOfGoal.update {
+            it + SpecialDateOfGoal(
+                id            = System.currentTimeMillis().toInt(),
+                goalTitle     = goalTitle,
+                startEpochDay = startDate.toEpochDay(),
+                endEpochDay   = endDate.toEpochDay(),
+                colorArgb     = colorArgb,
+            )
+        }
+        persistGoalSpecialDatesDebounced()
     }
 
     fun removeSpecialDateGoal(id: Int) {
         _specialDatesOfGoal.update { it.filter { sd -> sd.id != id } }
-        persistGoalSpecialDates()
-    }
-
-
-    fun removeSpecialDate(id: Int) {
-        _specialDatesOfYear.update { list -> list.filter { it.id != id } }
-        persistSpecialDates()
+        persistGoalSpecialDatesDebounced()
     }
 
     // ── Goals CRUD ────────────────────────────────────────────────────────────
@@ -278,7 +316,10 @@ class Wallpaper365ViewModel(
         viewModelScope.launch {
             val current = goals.value
             if (current.size >= 2) return@launch
-            persistGoals(current + goal)
+            val capitalized = goal.copy(
+                title = goal.title.trim().replaceFirstChar { it.uppercase() }
+            )
+            persistGoals(current + capitalized)
         }
     }
 
@@ -300,12 +341,12 @@ class Wallpaper365ViewModel(
         _wallpaperSetEvent.update { true }
         viewModelScope.launch {
             saveCurrentModeConfig(currentMode)
-            WorkManager.Companion.getInstance(appContext).enqueue(
+            WorkManager.getInstance(appContext).enqueue(
                 OneTimeWorkRequestBuilder<DailyWallpaperWorker>()
                     .setInputData(
                         workDataOf(
-                            DailyWallpaperWorker.Companion.KEY_TARGET to target.name,
-                            DailyWallpaperWorker.Companion.KEY_MODE to currentMode.name,
+                            DailyWallpaperWorker.KEY_TARGET to target.name,
+                            DailyWallpaperWorker.KEY_MODE   to currentMode.name,
                         )
                     )
                     .build()
@@ -318,16 +359,18 @@ class Wallpaper365ViewModel(
         val currentTarget = _setWallpaperTo.value
         viewModelScope.launch {
             saveCurrentModeConfig(currentMode)
-            WorkManager.Companion.getInstance(appContext).enqueueUniquePeriodicWork(
+            WorkManager.getInstance(appContext).enqueueUniquePeriodicWork(
                 "DailyWallpaper",
                 ExistingPeriodicWorkPolicy.UPDATE,
                 PeriodicWorkRequestBuilder<DailyWallpaperWorker>(1, TimeUnit.DAYS)
                     .setInitialDelay(calculateDelayUntilNextMorning(), TimeUnit.MILLISECONDS)
-                    .setConstraints(Constraints.Builder().setRequiresBatteryNotLow(true).build())
+                    .setConstraints(
+                        Constraints.Builder().setRequiresBatteryNotLow(true).build()
+                    )
                     .setInputData(
                         workDataOf(
-                            DailyWallpaperWorker.Companion.KEY_TARGET to currentTarget.name,
-                            DailyWallpaperWorker.Companion.KEY_MODE to currentMode.name,
+                            DailyWallpaperWorker.KEY_TARGET to currentTarget.name,
+                            DailyWallpaperWorker.KEY_MODE   to currentMode.name,
                         )
                     )
                     .build()
@@ -336,66 +379,58 @@ class Wallpaper365ViewModel(
     }
 
     fun cancelAutoDailyWallpaperUpdate(): String {
-        WorkManager.Companion.getInstance(appContext).cancelUniqueWork("DailyWallpaper")
-        return "Auto wallpaper stopped"
+        WorkManager.getInstance(appContext).cancelUniqueWork("DailyWallpaper")
+        return "Automatic daily updates have been disabled"
     }
 
-    // ── Private: persist helpers ──────────────────────────────────────────────
+    // ── Private: immediate persist (for discrete actions like taps) ───────────
 
-    private fun persistAppPrefs() {
+    private fun persistAppPrefsNow() {
         viewModelScope.launch {
             appDao.saveAppPrefs(
                 AppPrefsEntity(
-                    theme = _selectedAccentColor.value,
-                    gridStyle = _style.value,
-                    showLabel = _showLabel.value,
-                    verticalBias = _verticalPosition.value,
-                    monthDotSize = _monthDotSize.value,
-                    goalDotSize = _goalDotSize.value,
-                    showMiniFloatingPreview = _showMiniFloatingPreview.value
+                    theme                   = _selectedAccentColor.value,
+                    gridStyle               = _style.value,
+                    showLabel               = _showLabel.value,
+                    verticalBias            = _verticalPosition.value,
+                    monthDotSize            = _monthDotSize.value,
+                    goalDotSize             = _goalDotSize.value,
+                    showMiniFloatingPreview = _showMiniFloatingPreview.value,
                 )
             )
         }
     }
 
-    /**
-     * Writes updated special dates into the existing YearEntity without
-     * touching any other year config fields (theme, gridStyle, etc.).
-     */
-    private fun persistSpecialDates() {
-        viewModelScope.launch {
+    // ── Private: debounced persists (for sliders and rapid changes) ───────────
+
+    private fun persistYearTogglesDebounced() {
+        togglesDebounceJob?.cancel()
+        togglesDebounceJob = viewModelScope.launch {
+            delay(300)
             val existing = appDao.getYearThemeConfig() ?: YearDotsSpec(
-                theme = _selectedAccentColor.value,
-                gridStyle = _style.value,
-                showLabel = _showLabel.value,
+                theme        = _selectedAccentColor.value,
+                gridStyle    = _style.value,
+                showLabel    = _showLabel.value,
                 verticalBias = _verticalPosition.value,
             ).toEntity()
             appDao.saveYearThemeConfig(
-                existing.copy(specialDates = _specialDatesOfYear.value)
+                existing.copy(
+                    showNumberInsteadOfDots = _showNumberInsteadOfDots.value,
+                    showBothNumberAndDot    = _showBothNumberAndDot.value,
+                )
             )
         }
     }
 
-    private fun persistGoals(updatedList: List<Goal>) {
-        viewModelScope.launch {
-            val existing = appDao.getGoalsThemeConfig() ?: GoalsEntity(
-                goal = emptyList(),
-                showLabel = _showLabel.value,
-                dotSizeMultiplier = _goalDotSize.value,
-                theme = _selectedAccentColor.value,
-                gridStyle = _style.value,
-                verticalBias = _verticalPosition.value,
-            )
-            appDao.saveGoalsThemeConfig(existing.copy(goal = updatedList))
-        }
-    }
-
-
-    private fun persistYearConfig() {
-        viewModelScope.launch {
+    private fun persistYearConfigDebounced() {
+        yearConfigDebounceJob?.cancel()
+        yearConfigDebounceJob = viewModelScope.launch {
+            delay(300)
             val existing = appDao.getYearThemeConfig() ?: YearDotsSpec(
-                theme = _selectedAccentColor.value, gridStyle = _style.value,
-                showLabel = _showLabel.value, verticalBias = _verticalPosition.value,
+                theme        = _selectedAccentColor.value,
+                gridStyle    = _style.value,
+                showLabel    = _showLabel.value,
+                verticalBias = _verticalPosition.value,
             ).toEntity()
             appDao.saveYearThemeConfig(
                 existing.copy(
@@ -407,11 +442,15 @@ class Wallpaper365ViewModel(
         }
     }
 
-    private fun persistMonthConfig() {
-        viewModelScope.launch {
+    private fun persistMonthConfigDebounced() {
+        monthConfigDebounceJob?.cancel()
+        monthConfigDebounceJob = viewModelScope.launch {
+            delay(300)
             val existing = appDao.getMonthThemeConfig() ?: MonthDotsSpec(
-                theme = _selectedAccentColor.value, gridStyle = _style.value,
-                showLabel = _showLabel.value, verticalBias = _verticalPosition.value,
+                theme             = _selectedAccentColor.value,
+                gridStyle         = _style.value,
+                showLabel         = _showLabel.value,
+                verticalBias      = _verticalPosition.value,
                 dotSizeMultiplier = _monthDotSize.value,
             ).toEntity()
             appDao.saveMonthThemeConfig(
@@ -424,13 +463,17 @@ class Wallpaper365ViewModel(
         }
     }
 
-    private fun persistGoalSpecialDates() {
-        viewModelScope.launch {
+    private fun persistGoalSpecialDatesDebounced() {
+        goalConfigDebounceJob?.cancel()
+        goalConfigDebounceJob = viewModelScope.launch {
+            delay(300)
             val existing = appDao.getGoalsThemeConfig() ?: GoalsEntity(
-                goal = goals.value, showLabel = _showLabel.value,
+                goal              = goals.value,
+                showLabel         = _showLabel.value,
                 dotSizeMultiplier = _goalDotSize.value,
-                theme = _selectedAccentColor.value, gridStyle = _style.value,
-                verticalBias = _verticalPosition.value,
+                theme             = _selectedAccentColor.value,
+                gridStyle         = _style.value,
+                verticalBias      = _verticalPosition.value,
             )
             appDao.saveGoalsThemeConfig(
                 existing.copy(
@@ -442,29 +485,41 @@ class Wallpaper365ViewModel(
         }
     }
 
+    private fun persistGoals(updatedList: List<Goal>) {
+        // Goals add/remove is a discrete action — write immediately
+        viewModelScope.launch {
+            val existing = appDao.getGoalsThemeConfig() ?: GoalsEntity(
+                goal              = emptyList(),
+                showLabel         = _showLabel.value,
+                dotSizeMultiplier = _goalDotSize.value,
+                theme             = _selectedAccentColor.value,
+                gridStyle         = _style.value,
+                verticalBias      = _verticalPosition.value,
+            )
+            appDao.saveGoalsThemeConfig(existing.copy(goal = updatedList))
+        }
+    }
 
-    /**
-     * Called before every worker dispatch. Snapshots current in-memory state
-     * into Room so the worker always reads fresh config.
-     */
+    // ── Private: snapshot all state to Room before worker dispatch ────────────
+
     private suspend fun saveCurrentModeConfig(mode: WallpaperMode) {
-        val theme        = _selectedAccentColor.value
-        val gridStyle    = _style.value
-        val verticalBias = _verticalPosition.value
-        val showLabel    = _showLabel.value
-        val showNumbers  = _showNumberInsteadOfDots.value
-        val showBoth     = _showBothNumberAndDot.value
+        val theme       = _selectedAccentColor.value
+        val gridStyle   = _style.value
+        val vertBias    = _verticalPosition.value
+        val showLabel   = _showLabel.value
+        val showNumbers = _showNumberInsteadOfDots.value
+        val showBoth    = _showBothNumberAndDot.value
 
         when (mode) {
             WallpaperMode.Year -> {
                 val existing = appDao.getYearThemeConfig()
                 appDao.saveYearThemeConfig(
                     YearDotsSpec(
-                        theme        = theme,
-                        gridStyle    = gridStyle,
-                        showLabel    = showLabel,
-                        verticalBias = verticalBias,
-                        specialDates = _specialDatesOfYear.value.ifEmpty {
+                        theme                   = theme,
+                        gridStyle               = gridStyle,
+                        showLabel               = showLabel,
+                        verticalBias            = vertBias,
+                        specialDates            = _specialDatesOfYear.value.ifEmpty {
                             existing?.specialDates ?: emptyList()
                         },
                         showNumberInsteadOfDots = showNumbers,
@@ -477,12 +532,12 @@ class Wallpaper365ViewModel(
                 val existing = appDao.getMonthThemeConfig()
                 appDao.saveMonthThemeConfig(
                     MonthDotsSpec(
-                        theme        = theme,
-                        gridStyle    = gridStyle,
-                        showLabel    = showLabel,
-                        verticalBias = verticalBias,
-                        dotSizeMultiplier = _monthDotSize.value,
-                        specialDates = _specialDatesOfMonth.value.ifEmpty {
+                        theme                   = theme,
+                        gridStyle               = gridStyle,
+                        showLabel               = showLabel,
+                        verticalBias            = vertBias,
+                        dotSizeMultiplier       = _monthDotSize.value,
+                        specialDates            = _specialDatesOfMonth.value.ifEmpty {
                             existing?.specialDates ?: emptyList()
                         },
                         showNumberInsteadOfDots = showNumbers,
@@ -495,17 +550,20 @@ class Wallpaper365ViewModel(
                 val existing = appDao.getGoalsThemeConfig()
                 appDao.saveGoalsThemeConfig(
                     (existing ?: GoalsEntity(
-                        goal = goals.value, showLabel = showLabel,
-                        dotSizeMultiplier = _goalDotSize.value,
-                        theme = theme, gridStyle = gridStyle, verticalBias = verticalBias,
-                    )).copy(
                         goal              = goals.value,
+                        showLabel         = showLabel,
+                        dotSizeMultiplier = _goalDotSize.value,
                         theme             = theme,
                         gridStyle         = gridStyle,
-                        showLabel         = showLabel,
-                        verticalBias      = verticalBias,
-                        dotSizeMultiplier = _goalDotSize.value,
-                        specialDates      = _specialDatesOfGoal.value.ifEmpty {
+                        verticalBias      = vertBias,
+                    )).copy(
+                        goal                    = goals.value,
+                        theme                   = theme,
+                        gridStyle               = gridStyle,
+                        showLabel               = showLabel,
+                        verticalBias            = vertBias,
+                        dotSizeMultiplier       = _goalDotSize.value,
+                        specialDates            = _specialDatesOfGoal.value.ifEmpty {
                             existing?.specialDates ?: emptyList()
                         },
                         showNumberInsteadOfDots = showNumbers,
@@ -516,20 +574,12 @@ class Wallpaper365ViewModel(
         }
     }
 
-
-    // ── Private: SharedPreferences helpers ───────────────────────────────────
-
-    private fun loadSavedMode(): WallpaperMode =
-        WallpaperMode.valueOf(
-            prefs.getString("mode", WallpaperMode.Year.name) ?: WallpaperMode.Year.name
-        )
+    // ── Private: helpers ──────────────────────────────────────────────────────
 
     private fun loadSavedTarget(): WallpaperTarget =
         WallpaperTarget.valueOf(
             prefs.getString("target", WallpaperTarget.Lock.name) ?: WallpaperTarget.Lock.name
         )
-
-    // ── Private: timing ───────────────────────────────────────────────────────
 
     private fun calculateDelayUntilNextMorning(): Long {
         val now  = LocalDateTime.now()
@@ -537,21 +587,4 @@ class Wallpaper365ViewModel(
         if (!now.isBefore(next)) next = next.plusDays(1)
         return Duration.between(now, next).toMillis()
     }
-    private fun persistYearToggles() {
-        viewModelScope.launch {
-            val existing = appDao.getYearThemeConfig() ?: YearDotsSpec(
-                theme = _selectedAccentColor.value,
-                gridStyle = _style.value,
-                showLabel = _showLabel.value,
-                verticalBias = _verticalPosition.value,
-            ).toEntity()
-            appDao.saveYearThemeConfig(
-                existing.copy(
-                    showNumberInsteadOfDots = _showNumberInsteadOfDots.value,
-                    showBothNumberAndDot    = _showBothNumberAndDot.value,
-                )
-            )
-        }
-    }
-
 }

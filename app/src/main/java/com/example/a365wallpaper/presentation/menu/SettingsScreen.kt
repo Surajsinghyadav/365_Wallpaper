@@ -1,6 +1,5 @@
-package com.example.a365wallpaper.presentation.Menu
+package com.example.a365wallpaper.presentation.menu
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,8 +18,8 @@ import com.adamglin.phosphoricons.Fill
 import com.adamglin.phosphoricons.Regular
 import com.adamglin.phosphoricons.fill.FrameCorners
 import com.adamglin.phosphoricons.regular.ArrowLeft
-import com.example.a365wallpaper.presentation.HomeScreen.GlassCard
-import com.example.a365wallpaper.presentation.HomeScreen.Wallpaper365ViewModel
+import com.example.a365wallpaper.presentation.homeScreen.GlassCard
+import com.example.a365wallpaper.presentation.homeScreen.Wallpaper365ViewModel
 import com.example.a365wallpaper.ui.theme.AppColor
 
 @OptIn(ExperimentalMaterial3Api::class)

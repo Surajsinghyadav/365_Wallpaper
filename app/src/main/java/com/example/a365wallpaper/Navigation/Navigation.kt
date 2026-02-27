@@ -11,11 +11,11 @@ import androidx.compose.runtime.Composable
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
-import com.example.a365wallpaper.presentation.Menu.DevProfileScreen
-import com.example.a365wallpaper.presentation.Menu.LogsScreen
-import com.example.a365wallpaper.presentation.HomeScreen.Wallpaper365HomeScreen
-import com.example.a365wallpaper.presentation.HomeScreen.Wallpaper365ViewModel
-import com.example.a365wallpaper.presentation.Menu.SettingsScreen
+import com.example.a365wallpaper.presentation.menu.DevProfileScreen
+import com.example.a365wallpaper.presentation.menu.LogsScreen
+import com.example.a365wallpaper.presentation.homeScreen.Wallpaper365HomeScreen
+import com.example.a365wallpaper.presentation.homeScreen.Wallpaper365ViewModel
+import com.example.a365wallpaper.presentation.menu.SettingsScreen
 
 @Composable
 fun AppNav(

@@ -1,4 +1,4 @@
-package com.example.a365wallpaper.presentation.Menu
+package com.example.a365wallpaper.presentation.menu
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -19,7 +19,7 @@ class LogsViewModel(private val logDao: LogDao) : ViewModel() {
             initialValue = emptyList()
         )
 
-    val totalLogsCount: StateFlow<Int> = logDao.getTotalLogsCount()
+    val totalLogsCount: StateFlow<Int> = logDao.getTotalLogsCountFlow()
         .map { it }
         .stateIn(
             scope = viewModelScope,

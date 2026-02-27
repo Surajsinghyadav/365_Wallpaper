@@ -1,4 +1,4 @@
-package com.example.a365wallpaper.presentation.HomeScreen
+package com.example.a365wallpaper.presentation.homeScreen
 
 import android.app.DatePickerDialog
 import android.widget.Toast
@@ -22,17 +22,19 @@ import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.adamglin.PhosphorIcons
+import com.adamglin.phosphoricons.Fill
 import com.adamglin.phosphoricons.Regular
+import com.adamglin.phosphoricons.fill.PlayCircle
+import com.adamglin.phosphoricons.fill.StopCircle
 import com.adamglin.phosphoricons.regular.*
 import com.example.a365wallpaper.BitmapGenerators.Goal
 import com.example.a365wallpaper.data.Local.GridStyle
@@ -42,12 +44,12 @@ import com.example.a365wallpaper.data.Local.SpecialDateOfMonth
 import com.example.a365wallpaper.data.Local.SpecialDateOfYear
 import com.example.a365wallpaper.data.Local.WallpaperMode
 import com.example.a365wallpaper.data.Local.WallpaperTarget
-import com.example.a365wallpaper.presentation.PreviewComponents.MockGoalsDots
-import com.example.a365wallpaper.presentation.PreviewComponents.MockMonthsDots
-import com.example.a365wallpaper.presentation.PreviewComponents.MockYearsDots
-import com.example.a365wallpaper.presentation.ReusableComponents.SpecialDatesCard
-import com.example.a365wallpaper.presentation.ReusableComponents.VerticalPositionSlider
-import com.example.a365wallpaper.presentation.ReusableComponents.toDisplay
+import com.example.a365wallpaper.presentation.previewComponents.MockGoalsDots
+import com.example.a365wallpaper.presentation.previewComponents.MockMonthsDots
+import com.example.a365wallpaper.presentation.previewComponents.MockYearsDots
+import com.example.a365wallpaper.presentation.reusableComponents.SpecialDatesCard
+import com.example.a365wallpaper.presentation.reusableComponents.VerticalPositionSlider
+import com.example.a365wallpaper.presentation.reusableComponents.toDisplay
 import com.example.a365wallpaper.utils.toColors
 import com.example.a365wallpaper.ui.theme.AppColor
 import com.example.a365wallpaper.ui.theme.DotTheme
@@ -62,24 +64,24 @@ fun Wallpaper365HomeScreen(
     viewModel: Wallpaper365ViewModel,
     goToDevProfile: () -> Unit
 ) {
-    val isReady                 by viewModel.isReady.collectAsStateWithLifecycle()
-    val mode                    by viewModel.mode.collectAsStateWithLifecycle()
-    val target                  by viewModel.setWallpaperTo.collectAsStateWithLifecycle()
-    val gridStyle               by viewModel.style.collectAsStateWithLifecycle()
+    val isReady by viewModel.isReady.collectAsStateWithLifecycle()
+    val mode by viewModel.mode.collectAsStateWithLifecycle()
+    val target by viewModel.setWallpaperTo.collectAsStateWithLifecycle()
+    val gridStyle by viewModel.style.collectAsStateWithLifecycle()
     val showMiniFloatingPreview by viewModel.showMiniFloatingPreview.collectAsStateWithLifecycle()
-    val accent                  by viewModel.selectedAccentColor.collectAsStateWithLifecycle()
-    val showLabel               by viewModel.showLabel.collectAsStateWithLifecycle()
-    val verticalPosition        by viewModel.verticalPosition.collectAsStateWithLifecycle()
-    val goals                   by viewModel.goals.collectAsStateWithLifecycle()
-    val monthDotSize            by viewModel.monthDotSize.collectAsStateWithLifecycle()
-    val goalDotSize             by viewModel.goalDotSize.collectAsStateWithLifecycle()
-    val wallpaperSetEvent       by viewModel.wallpaperSetEvent.collectAsStateWithLifecycle()
-    val specialDates            by viewModel.specialDatesOfYear.collectAsStateWithLifecycle()
+    val accent by viewModel.selectedAccentColor.collectAsStateWithLifecycle()
+    val showLabel by viewModel.showLabel.collectAsStateWithLifecycle()
+    val verticalPosition by viewModel.verticalPosition.collectAsStateWithLifecycle()
+    val goals by viewModel.goals.collectAsStateWithLifecycle()
+    val monthDotSize by viewModel.monthDotSize.collectAsStateWithLifecycle()
+    val goalDotSize by viewModel.goalDotSize.collectAsStateWithLifecycle()
+    val wallpaperSetEvent by viewModel.wallpaperSetEvent.collectAsStateWithLifecycle()
+    val isServiceActive by viewModel.isServiceActive.collectAsStateWithLifecycle()
     val showNumberInsteadOfDots by viewModel.showNumberInsteadOfDots.collectAsStateWithLifecycle()
-    val showBothNumberAndDot    by viewModel.showBothNumberAndDot.collectAsStateWithLifecycle()
-    val specialDatesYear  by viewModel.specialDatesOfYear.collectAsStateWithLifecycle()
+    val showBothNumberAndDot by viewModel.showBothNumberAndDot.collectAsStateWithLifecycle()
+    val specialDatesYear by viewModel.specialDatesOfYear.collectAsStateWithLifecycle()
     val specialDatesMonth by viewModel.specialDatesOfMonth.collectAsStateWithLifecycle()
-    val specialDatesGoal  by viewModel.specialDatesOfGoal.collectAsStateWithLifecycle()
+    val specialDatesGoal by viewModel.specialDatesOfGoal.collectAsStateWithLifecycle()
 
 
     var showAddGoalDialog by remember { mutableStateOf(false) }
@@ -87,7 +89,7 @@ fun Wallpaper365HomeScreen(
     val context = LocalContext.current
     val showMiniPreview by remember {
         derivedStateOf {
-           showMiniFloatingPreview && (lazyListState.firstVisibleItemIndex > 0 ||
+            showMiniFloatingPreview && (lazyListState.firstVisibleItemIndex > 0 ||
                     lazyListState.firstVisibleItemScrollOffset > 1300)
         }
     }
@@ -176,12 +178,10 @@ fun Wallpaper365HomeScreen(
                     target = target,
                     onTargetClick = { viewModel.updateSetWallpaperTo(it) },
                     onStopService = {
-                        Toast.makeText(
-                            context,
-                            viewModel.cancelAutoDailyWallpaperUpdate(),
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        val msg = viewModel.cancelAutoDailyWallpaperUpdate()
+                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                     },
+                    isServiceActive = isServiceActive,
                     onSetWallpaper = {
                         viewModel.runDailyWallpaperWorker(target)
                         viewModel.scheduleAutoDailyWallpaperUpdate()
@@ -203,25 +203,24 @@ fun Wallpaper365HomeScreen(
 
                 // ── Live Preview ──────────────────────────────────────────────
                 item {
-                        PreviewSection(
-                            isReady = isReady,
-                            mode = mode,
-                            dotTheme = accent,
-                            gridStyle = gridStyle,
-                            verticalPosition = verticalPosition,
-                            showLabel = showLabel,
-                            goals = goals,
-                            monthDotSize = monthDotSize,
-                            goalDotSize = goalDotSize,
-                            showNumberInsteadOfDots = showNumberInsteadOfDots,
-                            showBothNumberAndDot = showBothNumberAndDot,
-                            specialDatesYear = specialDatesYear,
-                            specialDatesMonth = specialDatesMonth,
-                            specialDatesGoal = specialDatesGoal
+                    PreviewSection(
+                        isReady = isReady,
+                        mode = mode,
+                        dotTheme = accent,
+                        gridStyle = gridStyle,
+                        verticalPosition = verticalPosition,
+                        showLabel = showLabel,
+                        goals = goals,
+                        monthDotSize = monthDotSize,
+                        goalDotSize = goalDotSize,
+                        showNumberInsteadOfDots = showNumberInsteadOfDots,
+                        showBothNumberAndDot = showBothNumberAndDot,
+                        specialDatesYear = specialDatesYear,
+                        specialDatesMonth = specialDatesMonth,
+                        specialDatesGoal = specialDatesGoal
 
 
-                        )
-
+                    )
 
 
                 }
@@ -259,17 +258,19 @@ fun Wallpaper365HomeScreen(
                         Spacer(Modifier.height(4.dp))
                         when (mode) {
                             WallpaperMode.Month -> DotSizeSlider(
-                                label        = "Shape Size",
-                                value        = monthDotSize,
-                                valueRange   = 0.25f..1.0f,
+                                label = "Shape Size",
+                                value = monthDotSize,
+                                valueRange = 0.25f..1.0f,
                                 onValueChange = { viewModel.updateMonthDotSize(it) }
                             )
+
                             WallpaperMode.Goals -> DotSizeSlider(
-                                label        = "Shape Size",
-                                value        = goalDotSize,
-                                valueRange   = 0.25f..1.0f,
+                                label = "Shape Size",
+                                value = goalDotSize,
+                                valueRange = 0.25f..1.0f,
                                 onValueChange = { viewModel.updateGoalDotSize(it) }
                             )
+
                             else -> {}
                         }
                     }
@@ -291,16 +292,33 @@ fun Wallpaper365HomeScreen(
                                             .clickable { showAddGoalDialog = true },
                                         shape = RoundedCornerShape(12.dp),
                                         color = AppColor.Primary.copy(alpha = 0.10f),
-                                        border = BorderStroke(1.dp, AppColor.Primary.copy(alpha = 0.35f))
+                                        border = BorderStroke(
+                                            1.dp,
+                                            AppColor.Primary.copy(alpha = 0.35f)
+                                        )
                                     ) {
                                         Row(
-                                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                                            modifier = Modifier.padding(
+                                                horizontal = 14.dp,
+                                                vertical = 12.dp
+                                            ),
                                             verticalAlignment = Alignment.CenterVertically,
                                             horizontalArrangement = Arrangement.Center
                                         ) {
-                                            Icon(PhosphorIcons.Regular.Plus, "Add Goal", tint = AppColor.Primary, modifier = Modifier.size(18.dp))
+                                            Icon(
+                                                PhosphorIcons.Regular.Plus,
+                                                "Add Goal",
+                                                tint = AppColor.Primary,
+                                                modifier = Modifier.size(18.dp)
+                                            )
                                             Spacer(Modifier.width(8.dp))
-                                            Text("Add Goal", color = AppColor.Primary, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold))
+                                            Text(
+                                                "Add Goal",
+                                                color = AppColor.Primary,
+                                                style = MaterialTheme.typography.bodyMedium.copy(
+                                                    fontWeight = FontWeight.SemiBold
+                                                )
+                                            )
                                         }
                                     }
                                 }
@@ -311,27 +329,38 @@ fun Wallpaper365HomeScreen(
 
 // ── Special Dates card — mode-aware ───────────────────────────────────────────
                 item {
-                        when (mode) {
-                            WallpaperMode.Year -> SpecialDatesCard(
-                                specialDates = specialDatesYear.map { it.toDisplay() },
-                                accent       = accent,
-                                onAdd        = { s, e, c -> viewModel.addSpecialDateYear(s, e, c) },
-                                onRemove     = { viewModel.removeSpecialDateYear(it) },
-                            )
-                            WallpaperMode.Month -> SpecialDatesCard(
-                                specialDates = specialDatesMonth.map { it.toDisplay() },
-                                accent       = accent,
-                                onAdd        = { s, e, c -> viewModel.addSpecialDateMonth(s, e, c) },
-                                onRemove     = { viewModel.removeSpecialDateMonth(it) },
-                            )
-                            WallpaperMode.Goals -> SpecialDatesCard(
-                                specialDates = specialDatesGoal.map { it.toDisplay() },
-                                accent       = accent,
-                                onAdd        = { s, e, c -> viewModel.addSpecialDateGoal(s, e, c) },
-                                onRemove     = { viewModel.removeSpecialDateGoal(it) },
-                            )
-                        }
+                    when (mode) {
+                        WallpaperMode.Year -> SpecialDatesCard(
+                            specialDates = specialDatesYear.map { it.toDisplay() },
+                            mode = WallpaperMode.Year,
+                            accent = accent,
+                            onAdd = { start, end, color, _ ->
+                                viewModel.addSpecialDateYear(start, end, color)
+                            },
+                            onRemove = { viewModel.removeSpecialDateYear(it) },
+                        )
 
+                        WallpaperMode.Month -> SpecialDatesCard(
+                            specialDates = specialDatesMonth.map { it.toDisplay() },
+                            mode = WallpaperMode.Year,
+                            accent = accent,
+                            onAdd = { start, end, color, _ ->
+                                viewModel.addSpecialDateMonth(start, end, color)
+                            },
+                            onRemove = { viewModel.removeSpecialDateMonth(it) },
+                        )
+
+                        WallpaperMode.Goals -> SpecialDatesCard(
+                            specialDates = specialDatesGoal.map { it.toDisplay() },
+                            mode = WallpaperMode.Goals,
+                            accent = accent,
+                            goals = goals,
+                            onAdd = { start, end, color, goalTitle ->
+                                viewModel.addSpecialDateGoal(start, end, color, goalTitle)
+                            },
+                            onRemove = { viewModel.removeSpecialDateGoal(it) },
+                        )
+                    }
 
                 }
 
@@ -339,35 +368,35 @@ fun Wallpaper365HomeScreen(
                 item {
                     GlassCard(title = "Elements") {
                         ToggleRow(
-                            icon     = PhosphorIcons.Regular.CalendarBlank,
-                            title    = "Show Progress Stats",
+                            icon = PhosphorIcons.Regular.CalendarBlank,
+                            title = "Show Progress Stats",
                             subtitle = "Example: 331d left · 9%",
-                            checked  = showLabel,
+                            checked = showLabel,
                             onCheckedChange = { viewModel.toggleShowLabel(it) }
                         )
                         Spacer(Modifier.height(4.dp))
                         // Show Day Numbers — visible for all modes
                         ToggleRow(
-                            icon     = PhosphorIcons.Regular.Hash,
-                            title    = "Show Day Numbers",
+                            icon = PhosphorIcons.Regular.Hash,
+                            title = "Show Day Numbers",
                             subtitle = when (mode) {
-                                WallpaperMode.Year  -> "Replace each dot with its day number (1–365)"
+                                WallpaperMode.Year -> "Replace each dot with its day number (1–365)"
                                 WallpaperMode.Month -> "Replace each dot with its day number (1–31)"
                                 WallpaperMode.Goals -> "Replace each dot with its day number"
                             },
-                            checked  = showNumberInsteadOfDots,
+                            checked = showNumberInsteadOfDots,
                             onCheckedChange = { viewModel.toggleShowNumberInsteadOfDots(it) }
                         )
                         AnimatedVisibility(
                             visible = showNumberInsteadOfDots,
-                            enter   = fadeIn() + slideInHorizontally { it },
-                            exit    = fadeOut() + slideOutHorizontally { -it },
+                            enter = fadeIn() + slideInHorizontally { it },
+                            exit = fadeOut() + slideOutHorizontally { -it },
                         ) {
                             ToggleRow(
-                                icon     = PhosphorIcons.Regular.CircleHalf,
-                                title    = "Show Both",
+                                icon = PhosphorIcons.Regular.CircleHalf,
+                                title = "Show Both",
                                 subtitle = "Draw dot with number overlaid on top",
-                                checked  = showBothNumberAndDot,
+                                checked = showBothNumberAndDot,
                                 onCheckedChange = { viewModel.toggleShowBothNumberAndDot(it) }
                             )
                         }
@@ -381,24 +410,24 @@ fun Wallpaper365HomeScreen(
 
         // ── Mini floating preview ─────────────────────────────────────────────
         AnimatedVisibility(
-            visible  = showMiniPreview,
-            enter    = fadeIn() + slideInVertically(),
-            exit     = fadeOut() + slideOutVertically(),
+            visible = showMiniPreview,
+            enter = fadeIn() + slideInVertically(),
+            exit = fadeOut() + slideOutVertically(),
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(top = 100.dp, start = 16.dp)
         ) {
             MiniFloatingPreview(
-                mode                    = mode,
-                dotTheme                = accent,
-                gridStyle               = gridStyle,
-                verticalPosition        = verticalPosition,
-                showLabel               = showLabel,
-                goals                   = goals,
-                monthDotSize            = monthDotSize,
-                goalDotSize             = goalDotSize,
+                mode = mode,
+                dotTheme = accent,
+                gridStyle = gridStyle,
+                verticalPosition = verticalPosition,
+                showLabel = showLabel,
+                goals = goals,
+                monthDotSize = monthDotSize,
+                goalDotSize = goalDotSize,
                 showNumberInsteadOfDots = showNumberInsteadOfDots,
-                showBothNumberAndDot    = showBothNumberAndDot,
+                showBothNumberAndDot = showBothNumberAndDot,
                 specialDatesYear = specialDatesYear,
                 specialDatesMonth = specialDatesMonth,
                 specialDatesGoal = specialDatesGoal,
@@ -444,7 +473,10 @@ private fun PreviewSection(
         color = AppColor.CardBg,
         border = BorderStroke(1.dp, AppColor.CardBorder)
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             Text(
                 "Live preview",
                 color = AppColor.TextPrimary,
@@ -491,10 +523,10 @@ private fun MiniFloatingPreview(
     isReady: Boolean,
 ) {
     Surface(
-        modifier       = Modifier.size(width = 110.dp, height = 220.dp),
-        shape          = RoundedCornerShape(20.dp),
-        color          = AppColor.CardBg.copy(alpha = 0.95f),
-        border         = BorderStroke(1.5.dp, AppColor.Primary.copy(alpha = 0.5f)),
+        modifier = Modifier.size(width = 110.dp, height = 220.dp),
+        shape = RoundedCornerShape(20.dp),
+        color = AppColor.CardBg.copy(alpha = 0.95f),
+        border = BorderStroke(1.5.dp, AppColor.Primary.copy(alpha = 0.5f)),
         shadowElevation = 8.dp
     ) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -541,34 +573,34 @@ private fun PhonePreviewMock(
     isReady: Boolean,
 ) {
     val currentGridStyle by rememberUpdatedState(gridStyle)
-    val capsuleShape   = RoundedCornerShape(50)
-    val phoneWidth     = 220 * scale.dp
-    val phoneHeight    = 440 * scale.dp
+    val capsuleShape = RoundedCornerShape(50)
+    val phoneWidth = 220 * scale.dp
+    val phoneHeight = 440 * scale.dp
     val containerHeight = 450 * scale.dp
-    val bezelRadius    = 38 * scale.dp
-    val bezelWidth     = 2 * scale.dp
-    val screenPadding  = 6 * scale.dp
-    val screenRadius   = 32 * scale.dp
+    val bezelRadius = 38 * scale.dp
+    val bezelWidth = 2 * scale.dp
+    val screenPadding = 6 * scale.dp
+    val screenRadius = 32 * scale.dp
     val statusPaddingH = 24 * scale.dp
     val statusPaddingV = 12 * scale.dp
-    val iconSize       = 10 * scale.dp
-    val spacerSize     = 4 * scale.dp
-    val islandWidth    = 60 * scale.dp
-    val islandHeight   = 18 * scale.dp
-    val contentTop     = 40 * scale.dp
-    val contentBottom  = 20 * scale.dp
-    val clockSize      = 52 * scale.sp
-    val dateSize       = 10 * scale.sp
-    val actionPadding  = 20 * scale.dp
+    val iconSize = 10 * scale.dp
+    val spacerSize = 4 * scale.dp
+    val islandWidth = 60 * scale.dp
+    val islandHeight = 18 * scale.dp
+    val contentTop = 40 * scale.dp
+    val contentBottom = 20 * scale.dp
+    val clockSize = 52 * scale.sp
+    val dateSize = 10 * scale.sp
+    val actionPadding = 20 * scale.dp
     val actionButtonSize = 40 * scale.dp
     val actionIconSize = 18 * scale.dp
     val personIconSize = 10 * scale.dp
     val personTextSize = 8 * scale.sp
-    val indicatorTop   = 12 * scale.dp
+    val indicatorTop = 12 * scale.dp
     val indicatorWidth = 80 * scale.dp
     val indicatorHeight = 4 * scale.dp
-    val dotsPaddingV   = 8 * scale.dp
-    val dotsPaddingH   = 8 * scale.dp
+    val dotsPaddingV = 8 * scale.dp
+    val dotsPaddingH = 8 * scale.dp
 
     Box(
         modifier = Modifier
@@ -577,9 +609,9 @@ private fun PhonePreviewMock(
         contentAlignment = Alignment.Center
     ) {
         Surface(
-            shape    = RoundedCornerShape(bezelRadius),
-            color    = Color(0xFF1A1A1A),
-            border   = BorderStroke(bezelWidth, Color(0xFF333333)),
+            shape = RoundedCornerShape(bezelRadius),
+            color = Color(0xFF1A1A1A),
+            border = BorderStroke(bezelWidth, Color(0xFF333333)),
             modifier = Modifier.size(width = phoneWidth, height = phoneHeight)
         ) {
             Box(
@@ -588,9 +620,11 @@ private fun PhonePreviewMock(
                     .clip(RoundedCornerShape(screenRadius))
                     .background(Color.Black)
             ) {
-                Box(modifier = Modifier
-                    .fillMaxSize()
-                    .background(dotTheme.bg.toColors()))
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(dotTheme.bg.toColors())
+                )
 
                 // Status Bar
                 Row(
@@ -601,20 +635,47 @@ private fun PhonePreviewMock(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(PhosphorIcons.Regular.LinkedinLogo, null, tint = Color.White, modifier = Modifier.size(iconSize))
+                        Icon(
+                            PhosphorIcons.Regular.LinkedinLogo,
+                            null,
+                            tint = Color.White,
+                            modifier = Modifier.size(iconSize)
+                        )
                         Spacer(Modifier.width(spacerSize))
-                        Icon(PhosphorIcons.Regular.ThreadsLogo, null, tint = Color.White, modifier = Modifier.size(iconSize))
+                        Icon(
+                            PhosphorIcons.Regular.ThreadsLogo,
+                            null,
+                            tint = Color.White,
+                            modifier = Modifier.size(iconSize)
+                        )
                         Spacer(Modifier.width(spacerSize))
-                        Icon(PhosphorIcons.Regular.DevToLogo, null, tint = Color.White, modifier = Modifier.size(iconSize))
+                        Icon(
+                            PhosphorIcons.Regular.DevToLogo,
+                            null,
+                            tint = Color.White,
+                            modifier = Modifier.size(iconSize)
+                        )
                     }
-                    Box(modifier = Modifier
-                        .size(width = islandWidth, height = islandHeight)
-                        .clip(capsuleShape)
-                        .background(Color.Black))
+                    Box(
+                        modifier = Modifier
+                            .size(width = islandWidth, height = islandHeight)
+                            .clip(capsuleShape)
+                            .background(Color.Black)
+                    )
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(PhosphorIcons.Regular.WifiHigh, null, tint = Color.White, modifier = Modifier.size(iconSize))
+                        Icon(
+                            PhosphorIcons.Regular.WifiHigh,
+                            null,
+                            tint = Color.White,
+                            modifier = Modifier.size(iconSize)
+                        )
                         Spacer(Modifier.width(spacerSize))
-                        Icon(PhosphorIcons.Regular.BatteryMedium, null, tint = Color.White, modifier = Modifier.size(iconSize))
+                        Icon(
+                            PhosphorIcons.Regular.BatteryMedium,
+                            null,
+                            tint = Color.White,
+                            modifier = Modifier.size(iconSize)
+                        )
                     }
                 }
 
@@ -623,12 +684,19 @@ private fun PhonePreviewMock(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(vertical = dotsPaddingV, horizontal = dotsPaddingH),
-                    contentAlignment = BiasAlignment(horizontalBias = 0f, verticalBias = verticalPosition)
+                    contentAlignment = BiasAlignment(
+                        horizontalBias = 0f,
+                        verticalBias = verticalPosition
+                    )
                 ) {
-                    if (!isReady){
-                        Box(Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center){
-                            CircularProgressIndicator()
+                    if (!isReady) {
+                        Box(
+                            Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                color = AppColor.CardBorder
+                            )
                         }
                         return@Box
                     }
@@ -639,22 +707,28 @@ private fun PhonePreviewMock(
                                 dotTheme = dotTheme, gridStyle = gridStyle, scale = scale,
                                 showLabel = showLabel,
                                 showNumberInsteadOfDots = showNumberInsteadOfDots,
-                                showBothNumberAndDot    = showBothNumberAndDot,
-                                specialDates            = specialDatesYear,
+                                showBothNumberAndDot = showBothNumberAndDot,
+                                specialDates = specialDatesYear,
                             )
+
                             WallpaperMode.Month -> MockMonthsDots(
                                 dotTheme = dotTheme, gridStyle = gridStyle, scale = scale,
                                 showLabel = showLabel, dotSizeMultiplier = monthDotSize,
                                 showNumberInsteadOfDots = showNumberInsteadOfDots,
-                                showBothNumberAndDot    = showBothNumberAndDot,
-                                specialDates            = specialDatesMonth,
+                                showBothNumberAndDot = showBothNumberAndDot,
+                                specialDates = specialDatesMonth,
                             )
+
                             WallpaperMode.Goals -> MockGoalsDots(
-                                dotTheme = dotTheme, gridStyle = gridStyle, scale = scale,
-                                showLabel = showLabel, goals = goals, dotSizeMultiplier = goalDotSize,
+                                dotTheme = dotTheme,
+                                gridStyle = gridStyle,
+                                scale = scale,
+                                showLabel = showLabel,
+                                goals = goals,
+                                dotSizeMultiplier = goalDotSize,
                                 showNumberInsteadOfDots = showNumberInsteadOfDots,
-                                showBothNumberAndDot    = showBothNumberAndDot,
-                                specialDates            = specialDatesGoal,
+                                showBothNumberAndDot = showBothNumberAndDot,
+                                specialDates = specialDatesGoal,
                             )
                         }
                     }
@@ -672,7 +746,11 @@ private fun PhonePreviewMock(
                         "8:00", color = Color.White.copy(alpha = 0.9f), fontSize = clockSize,
                         fontWeight = FontWeight.SemiBold,
                         style = LocalTextStyle.current.copy(
-                            shadow = Shadow(Color.Black, offset = Offset(0f, 4f * scale), blurRadius = 8f * scale)
+                            shadow = Shadow(
+                                Color.Black,
+                                offset = Offset(0f, 4f * scale),
+                                blurRadius = 8f * scale
+                            )
                         )
                     )
                     Spacer(Modifier.weight(1f))
@@ -683,14 +761,27 @@ private fun PhonePreviewMock(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        QuickActionButton(icon = PhosphorIcons.Regular.Flashlight, size = actionButtonSize, iconSize = actionIconSize)
+                        QuickActionButton(
+                            icon = PhosphorIcons.Regular.Flashlight,
+                            size = actionButtonSize,
+                            iconSize = actionIconSize
+                        )
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Person, null, tint = Color.White, modifier = Modifier.size(personIconSize))
+                                Icon(
+                                    Icons.Default.Person,
+                                    null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(personIconSize)
+                                )
                                 Text(" Personal", color = Color.White, fontSize = personTextSize)
                             }
                         }
-                        QuickActionButton(icon = PhosphorIcons.Regular.Camera, size = actionButtonSize, iconSize = actionIconSize)
+                        QuickActionButton(
+                            icon = PhosphorIcons.Regular.Camera,
+                            size = actionButtonSize,
+                            iconSize = actionIconSize
+                        )
                     }
                     Box(
                         modifier = Modifier
@@ -726,7 +817,7 @@ private fun <T> SegmentedPill(
     overrideSelected: T? = null, onClick: (() -> Unit)? = null
 ) {
     val actualSelected = overrideSelected ?: selected
-    val selectedIndex  = items.indexOf(actualSelected)
+    val selectedIndex = items.indexOf(actualSelected)
     Surface(
         modifier = modifier
             .clip(RoundedCornerShape(999.dp))
@@ -737,10 +828,16 @@ private fun <T> SegmentedPill(
         Box(modifier = Modifier.padding(4.dp)) {
             val animatedOffset by animateFloatAsState(
                 targetValue = selectedIndex.toFloat(),
-                animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow),
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessLow
+                ),
                 label = "pill_slide"
             )
-            Row(modifier = Modifier.matchParentSize(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(
+                modifier = Modifier.matchParentSize(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
                 items.forEachIndexed { index, _ ->
                     if (index == selectedIndex) {
                         Surface(
@@ -772,7 +869,14 @@ private fun <T> SegmentedPill(
                             .padding(vertical = 8.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(label(item), color = textColor, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 12.sp))
+                        Text(
+                            label(item),
+                            color = textColor,
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 12.sp
+                            )
+                        )
                     }
                 }
             }
@@ -786,29 +890,49 @@ fun GlassCard(title: String, content: @Composable () -> Unit) {
         modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
         color = AppColor.CardBg, border = BorderStroke(1.dp, AppColor.CardBorder)
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(title, color = AppColor.TextPrimary, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.3).sp))
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                title,
+                color = AppColor.TextPrimary,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = (-0.3).sp
+                )
+            )
             content()
         }
     }
 }
 
 @Composable
-private fun <T> ChipRow(items: List<T>, selected: T, onSelected: (T) -> Unit, label: (T) -> String) {
+private fun <T> ChipRow(
+    items: List<T>,
+    selected: T,
+    onSelected: (T) -> Unit,
+    label: (T) -> String
+) {
     LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         items(items) { item ->
             val isSel = item == selected
             Surface(
-                shape  = RoundedCornerShape(999.dp),
-                color  = if (isSel) AppColor.Primary.copy(alpha = 0.18f) else AppColor.GlassBg,
-                border = BorderStroke(1.dp, if (isSel) AppColor.Primary.copy(alpha = 0.45f) else AppColor.GlassBorder),
+                shape = RoundedCornerShape(999.dp),
+                color = if (isSel) AppColor.Primary.copy(alpha = 0.18f) else AppColor.GlassBg,
+                border = BorderStroke(
+                    1.dp,
+                    if (isSel) AppColor.Primary.copy(alpha = 0.45f) else AppColor.GlassBorder
+                ),
                 modifier = Modifier
                     .clip(RoundedCornerShape(999.dp))
                     .clickable { onSelected(item) }
             ) {
-                Text(label(item), modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                Text(
+                    label(item), modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                     color = if (isSel) AppColor.TextPrimary else AppColor.TextSecondary,
-                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold))
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold)
+                )
             }
         }
     }
@@ -827,32 +951,65 @@ private fun ColorRow(colors: DotThemes, selected: DotTheme, onSelected: (DotThem
                     .clickable { onSelected(appColor) },
                 contentAlignment = Alignment.Center
             ) {
-                if (sel) Box(modifier = Modifier
-                    .size(18.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.85f)))
+                if (sel) Box(
+                    modifier = Modifier
+                        .size(18.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.85f))
+                )
             }
         }
     }
 }
 
 @Composable
-private fun ToggleRow(icon: ImageVector, title: String, subtitle: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+private fun ToggleRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
     Surface(
         shape = RoundedCornerShape(14.dp), color = AppColor.GlassBg,
         border = BorderStroke(1.dp, AppColor.GlassBorder), modifier = Modifier.fillMaxWidth()
     ) {
-        Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier
-                .size(36.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(AppColor.Primary.copy(alpha = 0.14f)), contentAlignment = Alignment.Center) {
-                Icon(icon, contentDescription = null, tint = AppColor.Primary, modifier = Modifier.size(18.dp))
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(AppColor.Primary.copy(alpha = 0.14f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = AppColor.Primary,
+                    modifier = Modifier.size(18.dp)
+                )
             }
             Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(title, color = AppColor.TextPrimary, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold, fontSize = 13.sp))
-                Text(subtitle, color = AppColor.TextMuted, style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp))
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    title,
+                    color = AppColor.TextPrimary,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 13.sp
+                    )
+                )
+                Text(
+                    subtitle,
+                    color = AppColor.TextMuted,
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp)
+                )
             }
             Switch(
                 checked = checked, onCheckedChange = onCheckedChange,
@@ -873,14 +1030,29 @@ private fun DotSizeSlider(
     onValueChange: (Float) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text(label, color = AppColor.TextSecondary, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 12.sp))
-            Text("${(value * 100).toInt()}%", color = AppColor.TextMuted, style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                label,
+                color = AppColor.TextSecondary,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 12.sp
+                )
+            )
+            Text(
+                "${(value * 100).toInt()}%",
+                color = AppColor.TextMuted,
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp)
+            )
         }
         Slider(
-            value        = value,
+            value = value,
             onValueChange = onValueChange,
-            valueRange   = valueRange,
+            valueRange = valueRange,
             colors = SliderDefaults.colors(
                 thumbColor = AppColor.Primary,
                 activeTrackColor = AppColor.Primary.copy(alpha = 0.6f),
@@ -892,18 +1064,33 @@ private fun DotSizeSlider(
 
 
 @Composable
-private fun GlassButton(modifier: Modifier = Modifier, text: String, icon: ImageVector, onClick: () -> Unit) {
+private fun GlassButton(
+    modifier: Modifier = Modifier,
+    text: String,
+    icon: ImageVector,
+    onClick: () -> Unit
+) {
     Surface(
         modifier = modifier
             .height(48.dp)
             .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp), color = AppColor.GlassBg, border = BorderStroke(1.dp, AppColor.GlassBorder)
+        shape = RoundedCornerShape(16.dp),
+        color = AppColor.GlassBg,
+        border = BorderStroke(1.dp, AppColor.GlassBorder)
     ) {
-        Row(modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
             Icon(icon, null, tint = AppColor.TextSecondary, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
-            Text(text, color = AppColor.TextSecondary, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold))
+            Text(
+                text,
+                color = AppColor.TextSecondary,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+            )
         }
     }
 }
@@ -912,20 +1099,33 @@ private fun GlassButton(modifier: Modifier = Modifier, text: String, icon: Image
 private fun BottomActionSheet(
     target: WallpaperTarget,
     onTargetClick: (WallpaperTarget) -> Unit,
+    isServiceActive: Boolean,                           // ← add param
     onStopService: () -> Unit,
     onSetWallpaper: () -> Unit,
     isAnimating: Boolean,
     onAnimationDone: () -> Unit,
 ) {
+    var showStopConfirm by remember { mutableStateOf(false) }
+
+    val stopIcon = if (isServiceActive) PhosphorIcons.Fill.StopCircle
+    else PhosphorIcons.Fill.PlayCircle
+    val stopTint = if (isServiceActive) Color(0xFFFF6B6B)
+    else AppColor.TextMuted
+    val stopBorderColor = if (isServiceActive) Color(0xFFFF6B6B).copy(alpha = 0.3f)
+    else AppColor.GlassBorder
+    val stopBg = if (isServiceActive) Color(0xFFFF6B6B).copy(alpha = 0.08f)
+    else AppColor.GlassBg
+
     Surface(
-        color = AppColor.CardBg, border = BorderStroke(1.dp, AppColor.CardBorder),
+        color = AppColor.CardBg,
+        border = BorderStroke(1.dp, AppColor.CardBorder),
         shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
     ) {
         Column(
             modifier = Modifier
                 .navigationBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             SegmentedPill(
                 items = WallpaperTarget.entries,
@@ -934,16 +1134,33 @@ private fun BottomActionSheet(
                 label = { it.label },
                 modifier = Modifier.fillMaxWidth()
             )
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                GlassButton(
-                    modifier = Modifier.weight(1f),
-                    text = "Stop Service",
-                    icon = PhosphorIcons.Regular.Stop,
-                    onClick = onStopService
-                )
+                // ── Stop/Inactive indicator button ────────────────────────────
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(stopBg)
+                        .border(1.dp, stopBorderColor, RoundedCornerShape(14.dp))
+                        .clickable(
+                            enabled = isServiceActive,       // ← not tappable when already stopped
+                            onClick = { showStopConfirm = true }
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        stopIcon,
+                        contentDescription = if (isServiceActive) "Stop service" else "Service inactive",
+                        tint = stopTint,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
                 AnimatedSetWallpaperButton(
                     modifier = Modifier.weight(1f),
                     isAnimating = isAnimating,
@@ -953,7 +1170,60 @@ private fun BottomActionSheet(
             }
         }
     }
+
+    // ── Confirm dialog (only reachable when isServiceActive = true) ───────────
+    if (showStopConfirm) {
+        AlertDialog(
+            onDismissRequest = { showStopConfirm = false },
+            containerColor = AppColor.DialogBg,
+            shape = RoundedCornerShape(20.dp),
+            icon = {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFFF6B6B).copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        PhosphorIcons.Fill.StopCircle, null,
+                        tint = Color(0xFFFF6B6B),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            },
+            title = {
+                Text(
+                    "Stop Auto-Update?",
+                    color = AppColor.TextPrimary,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Text(
+                    "The daily wallpaper service will stop updating automatically.",
+                    color = AppColor.TextSecondary,
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { onStopService(); showStopConfirm = false }) {
+                    Text("Stop", color = Color(0xFFFF6B6B), fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showStopConfirm = false }) {
+                    Text("Cancel", color = AppColor.TextSecondary)
+                }
+            }
+        )
+    }
 }
+
 
 @Composable
 private fun AnimatedSetWallpaperButton(
@@ -1023,8 +1293,8 @@ private fun AnimatedSetWallpaperButton(
 
                 SetWallpaperState.Loading -> {
                     CircularProgressIndicator(
-                        modifier  = Modifier.size(22.dp),
-                        color     = Color.White,
+                        modifier = Modifier.size(22.dp),
+                        color = Color.White,
                         strokeWidth = 2.5.dp,
                     )
                 }
@@ -1069,7 +1339,13 @@ private fun AddGoalDialog(onDismiss: () -> Unit, onConfirm: (Goal) -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = AppColor.DialogBg,
-        title = { Text("Add Goal", color = AppColor.TextPrimary, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)) },
+        title = {
+            Text(
+                "Add Goal",
+                color = AppColor.TextPrimary,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+            )
+        },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
@@ -1077,48 +1353,129 @@ private fun AddGoalDialog(onDismiss: () -> Unit, onConfirm: (Goal) -> Unit) {
                     label = { Text("Goal title", color = AppColor.TextSecondary) },
                     singleLine = true, isError = isTitleError,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = AppColor.Primary, unfocusedBorderColor = AppColor.GlassBorder,
-                        focusedTextColor = AppColor.TextPrimary, unfocusedTextColor = AppColor.TextPrimary, cursorColor = AppColor.Primary
+                        focusedBorderColor = AppColor.Primary,
+                        unfocusedBorderColor = AppColor.GlassBorder,
+                        focusedTextColor = AppColor.TextPrimary,
+                        unfocusedTextColor = AppColor.TextPrimary,
+                        cursorColor = AppColor.Primary
                     )
                 )
-                if (isTitleError) Text("Please enter a goal title", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                GoalDatePickerRow("Start date", startDate, dateFormatter) { openDatePicker(startDate) { picked -> startDate = picked; isRangeError = false } }
-                GoalDatePickerRow("Deadline", deadlineDate, dateFormatter) { openDatePicker(deadlineDate) { picked -> deadlineDate = picked; isRangeError = false } }
+                if (isTitleError) Text(
+                    "Please enter a goal title",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+                GoalDatePickerRow(
+                    "Start date",
+                    startDate,
+                    dateFormatter
+                ) {
+                    openDatePicker(startDate) { picked ->
+                        startDate = picked; isRangeError = false
+                    }
+                }
+                GoalDatePickerRow("Deadline", deadlineDate, dateFormatter) {
+                    openDatePicker(
+                        deadlineDate
+                    ) { picked -> deadlineDate = picked; isRangeError = false }
+                }
                 val days = ChronoUnit.DAYS.between(startDate, deadlineDate).toInt()
                 Text(
-                    text = when { days <= 0 -> "⚠️ Deadline must be after start date"; days > 366 -> "⚠️ Max 366 days allowed"; else -> "Duration: $days day${if (days != 1) "s" else ""}" },
+                    text = when {
+                        days <= 0 -> "⚠️ Deadline must be after start date"; days > 366 -> "⚠️ Max 366 days allowed"; else -> "Duration: $days day${if (days != 1) "s" else ""}"
+                    },
                     color = if (days in 1..366) AppColor.TextMuted else MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp)
                 )
-                if (isRangeError) Text(rangeErrorMsg, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                if (isRangeError) Text(
+                    rangeErrorMsg,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
         },
         confirmButton = {
             TextButton(onClick = {
-                if (title.isBlank()) { isTitleError = true; return@TextButton }
+                if (title.isBlank()) {
+                    isTitleError = true; return@TextButton
+                }
                 val totalDays = ChronoUnit.DAYS.between(startDate, deadlineDate).toInt()
                 when {
-                    totalDays <= 0 -> { rangeErrorMsg = "Deadline must be after start date"; isRangeError = true; return@TextButton }
-                    totalDays > 366 -> { rangeErrorMsg = "Goal cannot exceed 366 days (1 year)"; isRangeError = true; Toast.makeText(context, "Cannot set a goal longer than a year", Toast.LENGTH_SHORT).show(); return@TextButton }
+                    totalDays <= 0 -> {
+                        rangeErrorMsg = "Deadline must be after start date"; isRangeError =
+                            true; return@TextButton
+                    }
+
+                    totalDays > 366 -> {
+                        rangeErrorMsg = "Goal cannot exceed 366 days (1 year)"; isRangeError =
+                            true; Toast.makeText(
+                            context,
+                            "Cannot set a goal longer than a year",
+                            Toast.LENGTH_SHORT
+                        ).show(); return@TextButton
+                    }
                 }
-                onConfirm(Goal(title = title.trim(), startDate = startDate, deadline = deadlineDate))
+                onConfirm(
+                    Goal(
+                        title = title.trim(),
+                        startDate = startDate,
+                        deadline = deadlineDate
+                    )
+                )
             }) { Text("Add", color = AppColor.Primary, fontWeight = FontWeight.Bold) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = AppColor.TextSecondary) } }
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(
+                    "Cancel",
+                    color = AppColor.TextSecondary
+                )
+            }
+        }
     )
 }
 
 @Composable
-private fun GoalDatePickerRow(label: String, date: LocalDate, formatter: DateTimeFormatter, onClick: () -> Unit) {
+private fun GoalDatePickerRow(
+    label: String,
+    date: LocalDate,
+    formatter: DateTimeFormatter,
+    onClick: () -> Unit
+) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(label, color = AppColor.TextSecondary, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 12.sp))
-        Surface(modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .clickable(onClick = onClick), shape = RoundedCornerShape(10.dp), color = AppColor.GlassBg, border = BorderStroke(1.dp, AppColor.GlassBorder)) {
-            Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(date.format(formatter), color = AppColor.TextPrimary, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold))
-                Icon(PhosphorIcons.Regular.CalendarBlank, null, tint = AppColor.Primary, modifier = Modifier.size(18.dp))
+        Text(
+            label,
+            color = AppColor.TextSecondary,
+            style = MaterialTheme.typography.bodySmall.copy(
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 12.sp
+            )
+        )
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .clickable(onClick = onClick),
+            shape = RoundedCornerShape(10.dp),
+            color = AppColor.GlassBg,
+            border = BorderStroke(1.dp, AppColor.GlassBorder)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    date.format(formatter),
+                    color = AppColor.TextPrimary,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+                )
+                Icon(
+                    PhosphorIcons.Regular.CalendarBlank,
+                    null,
+                    tint = AppColor.Primary,
+                    modifier = Modifier.size(18.dp)
+                )
             }
         }
     }
@@ -1127,14 +1484,38 @@ private fun GoalDatePickerRow(label: String, date: LocalDate, formatter: DateTim
 @Composable
 private fun GoalRow(goal: Goal, onRemove: () -> Unit) {
     val formatter = remember { DateTimeFormatter.ofPattern("dd MMM") }
-    Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), color = AppColor.GlassBg, border = BorderStroke(1.dp, AppColor.GlassBorder)) {
-        Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(goal.title, color = AppColor.TextPrimary, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold))
-                Text("${goal.startDate.format(formatter)} → ${goal.deadline.format(formatter)}  ·  ${goal.daysLeft}d left  ·  ${goal.percentComplete}%", color = AppColor.TextMuted, style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp))
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = AppColor.GlassBg,
+        border = BorderStroke(1.dp, AppColor.GlassBorder)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    goal.title,
+                    color = AppColor.TextPrimary,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+                )
+                Text(
+                    "${goal.startDate.format(formatter)} → ${goal.deadline.format(formatter)}  ·  ${goal.daysLeft}d left  ·  ${goal.percentComplete}%",
+                    color = AppColor.TextMuted,
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp)
+                )
             }
             IconButton(onClick = onRemove, modifier = Modifier.size(32.dp)) {
-                Icon(PhosphorIcons.Regular.X, "Remove", tint = AppColor.TextMuted, modifier = Modifier.size(16.dp))
+                Icon(
+                    PhosphorIcons.Regular.X,
+                    "Remove",
+                    tint = AppColor.TextMuted,
+                    modifier = Modifier.size(16.dp)
+                )
             }
         }
     }

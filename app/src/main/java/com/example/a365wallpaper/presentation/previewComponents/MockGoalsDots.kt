@@ -1,4 +1,4 @@
-package com.example.a365wallpaper.presentation.PreviewComponents
+package com.example.a365wallpaper.presentation.previewComponents
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -34,7 +34,7 @@ fun MockGoalsDots(
     showNumberInsteadOfDots: Boolean = false,
     showBothNumberAndDot: Boolean = false,
     specialDates: List<SpecialDateOfGoal> = emptyList(),
-    availableWidth: Dp = 200.dp,
+    availableWidth: Dp = 180.dp,
 ) {
     val mockGoals = goals.ifEmpty {
         listOf(
@@ -54,7 +54,7 @@ fun MockGoalsDots(
     // ── Auto-fit dot size — same formula as generateGoalsDotsBitmap ───────────
     val ratio      = 0.45f
     val denomW     = columns * (1f + ratio) - ratio
-    val maxDotSize = availableWidth / denomW
+    val maxDotSize = availableWidth / denomW * scale
     val dotSize    = (maxDotSize * (autoScale * dotSizeMultiplier.coerceIn(0.25f, 1.0f)).coerceIn(0.1f, 1.0f))
         .coerceIn(3.dp, maxDotSize)
     val gap        = dotSize * ratio

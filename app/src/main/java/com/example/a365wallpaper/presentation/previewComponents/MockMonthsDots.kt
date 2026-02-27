@@ -1,4 +1,4 @@
-package com.example.a365wallpaper.presentation.PreviewComponents
+package com.example.a365wallpaper.presentation.previewComponents
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -9,7 +9,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -34,7 +33,7 @@ fun MockMonthsDots(
     showBothNumberAndDot: Boolean = false,
     specialDates: List<SpecialDateOfMonth> = emptyList(),
     // availableWidth lets us auto-fit; caller passes the phone screen width in dp
-    availableWidth: Dp = 200.dp,
+    availableWidth: Dp = 180.dp,
 ) {
     val currentDate = LocalDate.now()
     val noOfDays    = YearMonth.from(currentDate).lengthOfMonth()
@@ -66,7 +65,7 @@ fun MockMonthsDots(
     //   dotSize     = maxDiameter * multiplier  (clamped)
     val ratio       = 0.45f
     val denomW      = columns * (1f + ratio) - ratio
-    val maxDotSize  = availableWidth / denomW  // Dp
+    val maxDotSize  = availableWidth / denomW * scale  // Dp
     val dotSize     = (maxDotSize * dotSizeMultiplier.coerceIn(0.25f, 1.0f))
         .coerceIn(4.dp, maxDotSize)
     val gap         = dotSize * ratio

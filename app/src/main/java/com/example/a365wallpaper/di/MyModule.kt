@@ -3,9 +3,8 @@ package com.example.a365wallpaper.di
 import android.app.Application
 import com.example.a365wallpaper.Worker.DailyWallpaperWorker
 import com.example.a365wallpaper.data.database.AppDatabase
-import com.example.a365wallpaper.presentation.Menu.LogsViewModel
-import com.example.a365wallpaper.presentation.HomeScreen.Wallpaper365ViewModel
-import com.example.a365wallpaper.presentation.Menu.SettingsScreen
+import com.example.a365wallpaper.presentation.menu.LogsViewModel
+import com.example.a365wallpaper.presentation.homeScreen.Wallpaper365ViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.workmanager.dsl.workerOf
 import org.koin.core.module.dsl.viewModel

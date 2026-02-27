@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Typeface
+import androidx.compose.runtime.Stable
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.toColorInt
 import com.example.a365wallpaper.data.Local.GridStyle
@@ -15,7 +16,7 @@ import kotlinx.serialization.Serializable
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import kotlin.math.ceil
-
+@Stable
 @Serializable
 data class Goal(
     val title: String,

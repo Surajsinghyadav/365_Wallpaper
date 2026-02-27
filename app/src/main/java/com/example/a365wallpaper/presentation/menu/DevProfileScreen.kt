@@ -1,4 +1,4 @@
-package com.example.a365wallpaper.presentation.Menu
+package com.example.a365wallpaper.presentation.menu
 
 import android.content.Intent
 import androidx.compose.foundation.BorderStroke
@@ -35,11 +35,9 @@ import com.adamglin.phosphoricons.fill.ShareNetwork
 import com.adamglin.phosphoricons.fill.ShieldCheck
 import com.adamglin.phosphoricons.fill.SquaresFour
 import com.adamglin.phosphoricons.regular.*
-import com.example.a365wallpaper.Navigation.LogsScreen
-import com.example.a365wallpaper.Navigation.SettingsScreen
 import com.example.a365wallpaper.ui.theme.AppColor
 import com.example.a365wallpaper.utils.UrlHandler
-import com.example.a365wallpaper.presentation.HomeScreen.GlassCard
+import com.example.a365wallpaper.presentation.homeScreen.GlassCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -1,4 +1,4 @@
-package com.example.a365wallpaper.WallPaperUpdator
+package com.example.a365wallpaper.wallpaperUpdater
 
 import android.app.WallpaperManager
 import android.content.Context

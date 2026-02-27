@@ -1,4 +1,4 @@
-package com.example.a365wallpaper.presentation.ReusableComponents
+package com.example.a365wallpaper.presentation.reusableComponents
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement

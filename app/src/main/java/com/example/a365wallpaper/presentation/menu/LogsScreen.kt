@@ -1,4 +1,4 @@
-package com.example.a365wallpaper.presentation.Menu
+package com.example.a365wallpaper.presentation.menu
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
