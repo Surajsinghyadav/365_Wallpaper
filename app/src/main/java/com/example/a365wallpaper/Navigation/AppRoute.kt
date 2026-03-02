@@ -18,3 +18,7 @@ data object  LogsScreen : AppRoute
 @Serializable
 data object  SettingsScreen : AppRoute
 
+@Serializable
+data object OnboardingScreen : AppRoute
+
+

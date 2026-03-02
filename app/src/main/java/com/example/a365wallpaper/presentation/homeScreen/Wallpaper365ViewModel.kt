@@ -15,6 +15,9 @@ import androidx.work.workDataOf
 import com.example.a365wallpaper.BitmapGenerators.Goal
 import com.example.a365wallpaper.BitmapGenerators.MonthDotsSpec
 import com.example.a365wallpaper.BitmapGenerators.YearDotsSpec
+import com.example.a365wallpaper.BitmapGenerators.generateGoalsDotsBitmap
+import com.example.a365wallpaper.BitmapGenerators.generateMonthDotsBitmap
+import com.example.a365wallpaper.BitmapGenerators.generateYearDotsBitmap
 import com.example.a365wallpaper.Worker.DailyWallpaperWorker
 import com.example.a365wallpaper.data.Local.GridStyle
 import com.example.a365wallpaper.data.Local.SpecialDateOfGoal
@@ -25,9 +28,15 @@ import com.example.a365wallpaper.data.Local.WallpaperTarget
 import com.example.a365wallpaper.data.database.Dao.AppDao
 import com.example.a365wallpaper.data.database.Entity.AppPrefsEntity
 import com.example.a365wallpaper.data.database.Entity.GoalsEntity
+import com.example.a365wallpaper.data.database.Entity.MonthEntity
+import com.example.a365wallpaper.data.database.Entity.YearEntity
 import com.example.a365wallpaper.ui.theme.DotTheme
 import com.example.a365wallpaper.ui.theme.DotThemes
 import com.example.a365wallpaper.utils.toEntity
+import com.example.a365wallpaper.utils.toExternalModel
+import com.example.a365wallpaper.wallpaperUpdater.WallpaperSetter
+import com.example.a365wallpaper.wallpaperUpdater.getWallpaperSizePx
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,6 +51,7 @@ import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 class Wallpaper365ViewModel(
@@ -177,13 +187,14 @@ class Wallpaper365ViewModel(
 
     fun updateMode(mode: WallpaperMode) {
         _mode.update { mode }
-        prefs.edit { putString("mode", mode.name) }
+//        prefs.edit { putString("mode", mode.name) }
     }
 
     fun updateSetWallpaperTo(target: WallpaperTarget) {
         _setWallpaperTo.update { target }
         prefs.edit { putString("target", target.name) }
     }
+
 
     // ── Visual prefs — instant UI update, debounced Room write ───────────────
 
@@ -254,7 +265,7 @@ class Wallpaper365ViewModel(
     fun addSpecialDateYear(startDate: LocalDate, endDate: LocalDate, colorArgb: Int) {
         _specialDatesOfYear.update {
             it + SpecialDateOfYear(
-                id            = System.currentTimeMillis().toInt(),
+                id            = UUID.randomUUID().hashCode(),
                 startEpochDay = startDate.toEpochDay(),
                 endEpochDay   = endDate.toEpochDay(),
                 colorArgb     = colorArgb,
@@ -271,7 +282,7 @@ class Wallpaper365ViewModel(
     fun addSpecialDateMonth(startDate: LocalDate, endDate: LocalDate, colorArgb: Int) {
         _specialDatesOfMonth.update {
             it + SpecialDateOfMonth(
-                id            = System.currentTimeMillis().toInt(),
+                id            = UUID.randomUUID().hashCode(),
                 startEpochDay = startDate.toEpochDay(),
                 endEpochDay   = endDate.toEpochDay(),
                 colorArgb     = colorArgb,
@@ -293,7 +304,7 @@ class Wallpaper365ViewModel(
     ) {
         _specialDatesOfGoal.update {
             it + SpecialDateOfGoal(
-                id            = System.currentTimeMillis().toInt(),
+                id            = UUID.randomUUID().hashCode(),
                 goalTitle     = goalTitle,
                 startEpochDay = startDate.toEpochDay(),
                 endEpochDay   = endDate.toEpochDay(),
@@ -336,37 +347,44 @@ class Wallpaper365ViewModel(
 
     fun acknowledgeWallpaperSet() = _wallpaperSetEvent.update { false }
 
-    fun runDailyWallpaperWorker(target: WallpaperTarget) {
+    fun setWallpaperAndSchedule(target: WallpaperTarget) {
         val currentMode = _mode.value
-        _wallpaperSetEvent.update { true }
-        viewModelScope.launch {
-            saveCurrentModeConfig(currentMode)
-            WorkManager.getInstance(appContext).enqueue(
-                OneTimeWorkRequestBuilder<DailyWallpaperWorker>()
-                    .setInputData(
-                        workDataOf(
-                            DailyWallpaperWorker.KEY_TARGET to target.name,
-                            DailyWallpaperWorker.KEY_MODE   to currentMode.name,
-                        )
-                    )
-                    .build()
-            )
-        }
-    }
-
-    fun scheduleAutoDailyWallpaperUpdate() {
-        val currentMode   = _mode.value
         val currentTarget = _setWallpaperTo.value
+        _wallpaperSetEvent.update { true }
+
         viewModelScope.launch {
+            // ── Step 1: Save config to Room first ────────────────────────────────
             saveCurrentModeConfig(currentMode)
+
+            // ── Step 2: Set wallpaper RIGHT NOW (no WorkManager overhead) ─────────
+            launch(Dispatchers.IO) {
+                runCatching {
+                    val size = getWallpaperSizePx(appContext)
+                    val bmp = when (currentMode) {
+                        WallpaperMode.Year -> {
+                            val spec = (appDao.getYearThemeConfig() ?: YearEntity()).toExternalModel()
+                            generateYearDotsBitmap(size.width, size.height, spec)
+                        }
+                        WallpaperMode.Month -> {
+                            val spec = (appDao.getMonthThemeConfig() ?: MonthEntity()).toExternalModel()
+                            generateMonthDotsBitmap(size.width, size.height, spec)
+                        }
+                        WallpaperMode.Goals -> {
+                            val entity = appDao.getGoalsThemeConfig() ?: GoalsEntity()
+                            if (entity.goal.isEmpty()) return@runCatching
+                            generateGoalsDotsBitmap(size.width, size.height, entity.toExternalModel())
+                        }
+                    }
+                    WallpaperSetter(appContext).set(bmp, target, size)
+                }
+            }
+
+            // ── Step 3: Schedule the periodic midnight worker ─────────────────────
             WorkManager.getInstance(appContext).enqueueUniquePeriodicWork(
                 "DailyWallpaper",
                 ExistingPeriodicWorkPolicy.UPDATE,
                 PeriodicWorkRequestBuilder<DailyWallpaperWorker>(1, TimeUnit.DAYS)
                     .setInitialDelay(calculateDelayUntilNextMorning(), TimeUnit.MILLISECONDS)
-                    .setConstraints(
-                        Constraints.Builder().setRequiresBatteryNotLow(true).build()
-                    )
                     .setInputData(
                         workDataOf(
                             DailyWallpaperWorker.KEY_TARGET to currentTarget.name,
@@ -377,6 +395,7 @@ class Wallpaper365ViewModel(
             )
         }
     }
+
 
     fun cancelAutoDailyWallpaperUpdate(): String {
         WorkManager.getInstance(appContext).cancelUniqueWork("DailyWallpaper")
@@ -587,4 +606,37 @@ class Wallpaper365ViewModel(
         if (!now.isBefore(next)) next = next.plusDays(1)
         return Duration.between(now, next).toMillis()
     }
+
+    // ── DEV ONLY: Test worker fires in 2 minutes ──────────────────────────────────
+// Call this from a debug button in your UI.
+// Watch Logcat for tag "DailyWallpaperWorker" to confirm execution.
+// DELETE before release.
+    fun testWorkerIn2Minutes() {
+        val currentMode   = _mode.value
+        val currentTarget = _setWallpaperTo.value
+
+        viewModelScope.launch {
+            // Snapshot current config to Room exactly like the real flow does
+            saveCurrentModeConfig(currentMode)
+
+            WorkManager.getInstance(appContext).enqueueUniquePeriodicWork(
+                "DailyWallpaper",
+                ExistingPeriodicWorkPolicy.UPDATE,
+                PeriodicWorkRequestBuilder<DailyWallpaperWorker>(
+                    15, TimeUnit.MINUTES      // minimum allowed by WorkManager
+                )
+                    .setInitialDelay(2, TimeUnit.MINUTES)   // ← fires in 2 min
+                    .setInputData(
+                        workDataOf(
+                            DailyWallpaperWorker.KEY_TARGET to currentTarget.name,
+                            DailyWallpaperWorker.KEY_MODE   to currentMode.name,
+                        )
+                    )
+                    // No battery constraint — you want it to fire reliably during test
+                    .build()
+            )
+        }
+    }
+
+
 }

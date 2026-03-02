@@ -20,7 +20,7 @@ interface LogDao {
     fun getTotalLogsCountFlow(): Flow<Int>
 
     @Query("SELECT COUNT(*) FROM logentity")
-    fun getTotalLogsCount(): Int
+    suspend fun getTotalLogsCount(): Int
 
     @Query("DELETE FROM LogEntity")
     suspend fun deleteAllLogs()

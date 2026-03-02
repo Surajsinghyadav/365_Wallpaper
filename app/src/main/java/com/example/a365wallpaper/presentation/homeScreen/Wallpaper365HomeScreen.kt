@@ -166,7 +166,9 @@ fun Wallpaper365HomeScreen(
                         SegmentedPill(
                             items = WallpaperMode.entries,
                             selected = mode,
-                            onSelected = { viewModel.updateMode(it) },
+                            onSelected = {
+                                viewModel.updateMode(it)
+                                         },
                             label = { it.label },
                             modifier = Modifier.weight(1f)
                         )
@@ -183,8 +185,7 @@ fun Wallpaper365HomeScreen(
                     },
                     isServiceActive = isServiceActive,
                     onSetWallpaper = {
-                        viewModel.runDailyWallpaperWorker(target)
-                        viewModel.scheduleAutoDailyWallpaperUpdate()
+                        viewModel.testWorkerIn2Minutes()
                     },
                     isAnimating = wallpaperSetEvent,
                     onAnimationDone = { viewModel.acknowledgeWallpaperSet() }

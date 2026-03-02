@@ -1,6 +1,7 @@
 package com.example.a365wallpaper
 
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -17,6 +18,7 @@ import org.koin.androidx.compose.koinViewModel
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val prefs = applicationContext.getSharedPreferences("wallpaperprefs", Context.MODE_PRIVATE)
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
@@ -26,6 +28,7 @@ class MainActivity : ComponentActivity() {
                 val viewModel : Wallpaper365ViewModel = koinViewModel()
                 Scaffold(modifier = Modifier.fillMaxSize()) { paddingValues ->
                     AppNav(
+                        prefs,
                         viewModel
                     )
                 }
